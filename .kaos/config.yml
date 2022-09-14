@@ -1,0 +1,7 @@
+name: dj-kaos-utils
+version: 0.0.0
+description: Set of utilities and helpers for rapid development of Django applications
+
+repo_url: https://github.com/kaoslabsinc/dj-kaos-utils
+project_url: https://github.com/kaoslabsinc/dj-kaos-utils
+keywords: python, rapid developments, utils, utilities, helpers, kaos

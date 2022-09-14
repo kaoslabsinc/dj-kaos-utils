@@ -1,0 +1,9 @@
+include LICENSE
+include README.md
+
+graft docs
+
+graft dj_kaos_utils/static
+graft dj_kaos_utils/templates
+graft dj_kaos_utils/*/static
+graft dj_kaos_utils/*/templates
