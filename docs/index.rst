@@ -8,6 +8,7 @@ Set of utilities and helpers for rapid development of Django applications
    :caption: Contents:
 
    querysets
+   admin
 
 Indices and tables
 ==================
