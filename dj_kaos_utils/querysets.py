@@ -29,8 +29,22 @@ class RankedQuerySetMixin(models.QuerySet):
 
 
 class PageableQuerySet(models.QuerySet):
-    def paginate_minmax(self: QS, limit: int) -> QS:
-        d = self.values('id').aggregate(min=Min('id'), max=Max('id'))
+    """
+    Provide support for paginating django querysets. Useful for running expensive operations in batches.
+    """
+
+    def paginate_minmax(self: QS, limit: int, id_field='id') -> QS:
+        """
+        Paginate by slicing the queryset using an autoincrement field.
+        Requires the model in this queryset to have an autoincrement field, like id.
+        Each page is guaranteed to have a maximum count of limit, but it each individual page could have a lower count.
+        Does not retain the original order of the queryset in any way.
+
+        :param limit: Size of each page
+        :param id_field: The field to use for paging
+        :return: iterator with each object being a page of the queryset with maximum size of limit
+        """
+        d = self.values(id_field).aggregate(min=Min(id_field), max=Max(id_field))
         min_id, max_id = d['min'], d['max']
         if min_id is None:
             return self
@@ -38,6 +52,21 @@ class PageableQuerySet(models.QuerySet):
             yield self.filter(id__gte=i, id__lt=i + limit)
 
     def paginate_pks(self: QS, limit: int, simple: bool = True, mutating: bool = False) -> QS:
+        """
+        Paginate the queryset by identifying each object in the queryset by its primary key, and reloading them from the
+        queryset, page by page, by looking up their pks. Guarantees each page except the last page to have a size of
+        limit.
+
+        :param limit: Size of each page
+        :param simple: If True, any queryset filtering or annotations on the base queryset (self) will be cleared for
+        simplicity and efficiency
+        :param mutating: If the base queryset (self) mutates during each iteration over the pages, set to True, which
+        will cache the PK values into memory instead of reading from the DB on each page. Setting to True increases
+        memory usage but guarantees that each page returned corrosposnds to the original objects in the queryset before
+        any write/edit operations.
+        :return: iterator with each object being a page of the queryset with maximum size of limit.
+        Guaranteed each page except the last page to have a size of limit.
+        """
         qs = self.model.objects.all() if simple else self
         pk_values = self.values_list('pk', flat=True)
         if mutating:
@@ -47,14 +76,23 @@ class PageableQuerySet(models.QuerySet):
             yield qs.filter(pk__in=page.object_list)
 
     def paginate_pks_mutating(self: QS, limit, simple: bool = True) -> QS:
+        """
+        A shortcut for self.paginate_pks(limit, simple=simple, mutating=True)
+        """
         return self.paginate_pks(limit, simple=simple, mutating=True)
 
     def paginate(self: QS, limit: int) -> QS:
+        """
+        A shortcut to the favourite way of paginating for the queryset class. Meant to be overridden.
+        :param limit: Size of each page
+        :return: iterator with each object being a page of the queryset with maximum size of limit
+        """
         return self.paginate_minmax(limit)
 
     def paginated_update(self, limit: int, page_op: Callable[[models.QuerySet], int]) -> int:
         """
-        Run operation page_op on the queryset page by page
+        Run operation page_op on the queryset page by page. Each operation on a page is an atomic transaction, and will
+        be committed to the database upon success.
         :param limit: Page size
         :param page_op: Operation to run on each page. It should at the end update the database and return the number of
         rows updated
