@@ -1,11 +1,19 @@
+=============================================
 Welcome to Django Kaos Utils's documentation!
 =============================================
 
 Set of utilities and helpers for rapid development of Django applications
 
+Getting Started
+===============
+
+Install::
+
+    pip install dj-kaos-utils
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Modules:
 
    querysets
    admin
