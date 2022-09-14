@@ -17,6 +17,7 @@ Install::
 
    querysets
    admin
+   datetime
 
 Indices and tables
 ==================
