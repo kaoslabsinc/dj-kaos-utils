@@ -19,6 +19,7 @@ class BooleanAdminFilter(admin.SimpleListFilter):
     def filter(self, request, queryset):
         """
         Override this method to filter the queryset when the filter value is set to True
+
         :param request: the request from the admin site
         :param queryset: the queryset passed by the admin
         :return: filtered queryset

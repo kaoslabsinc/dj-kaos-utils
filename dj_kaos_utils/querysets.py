@@ -20,6 +20,7 @@ class RankedQuerySetMixin(models.QuerySet):
     def annotate_rank(self: QS, field, asc=False) -> QS:
         """
         Annotate the rank of each row based on the values in field.
+
         :param field: Rank entries based on values in field
         :param asc: Whether to rank the entries from lowest to highest. By default, rank from highest to lowest.
         :return:
@@ -59,13 +60,13 @@ class PageableQuerySet(models.QuerySet):
 
         :param limit: Size of each page
         :param simple: If True, any queryset filtering or annotations on the base queryset (self) will be cleared for
-        simplicity and efficiency
+            simplicity and efficiency
         :param mutating: If the base queryset (self) mutates during each iteration over the pages, set to True, which
-        will cache the PK values into memory instead of reading from the DB on each page. Setting to True increases
-        memory usage but guarantees that each page returned corrosposnds to the original objects in the queryset before
-        any write/edit operations.
-        :return: iterator with each object being a page of the queryset with maximum size of limit.
-        Guaranteed each page except the last page to have a size of limit.
+            will cache the PK values into memory instead of reading from the DB on each page. Setting to True increases
+            memory usage but guarantees that each page returned corresponds to the original objects in the queryset
+            before any write/edit operations.
+        :return: iterator with each object being a page of the queryset with maximum size of limit. Guaranteed each page
+            except the last page to have a size of limit.
         """
         qs = self.model.objects.all() if simple else self
         pk_values = self.values_list('pk', flat=True)
@@ -96,9 +97,10 @@ class PageableQuerySet(models.QuerySet):
         """
         Run operation page_op on the queryset page by page. Each operation on a page is an atomic transaction, and will
         be committed to the database upon success.
+
         :param limit: Page size
         :param page_op: Operation to run on each page. It should at the end update the database and return the number of
-        rows updated
+            rows updated
         :return: the total number of rows updated.
         """
         opts = self.model._meta

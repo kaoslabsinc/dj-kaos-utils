@@ -1,16 +1,13 @@
-.. Django Kaos Utils documentation master file, created by
-   sphinx-quickstart on Wed Sep 14 14:31:20 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to Django Kaos Utils's documentation!
 =============================================
+
+Set of utilities and helpers for rapid development of Django applications
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
+   querysets
 
 Indices and tables
 ==================
