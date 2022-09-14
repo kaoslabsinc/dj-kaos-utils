@@ -13,20 +13,23 @@ QS = TypeVar('QS', bound=models.QuerySet)
 
 class RankedQuerySetMixin(models.QuerySet):
     """
-    Mixin that adds an annotate_rank method to the QuerySet classes that inherit it. Used to annotate the rank of each
+    Mixin that adds an `annotate_rank` method to the QuerySet classes that inherit it. Used to annotate the rank of each
     row based on a field
     """
 
-    def annotate_rank(self: QS, field, asc=False) -> QS:
+    def annotate_rank(self: QS, field: str, rank_annotation_name: str = 'rank', asc: bool = False) -> QS:
         """
-        Annotate the rank of each row based on the values in field.
+        Annotate the rank of each row based on the values in the designated field.
 
-        :param field: Rank entries based on values in field
+        :param field: Rank entries based on values in this field
+        :param rank_annotation_name: The name of the annotation to store the rank. By default, ``rank``.
         :param asc: Whether to rank the entries from lowest to highest. By default, rank from highest to lowest.
-        :return:
+        :return: Queryset with rank annotated by `field`
         """
         order_by = F(field).asc() if asc else F(field).desc()
-        return self.annotate(rank=Window(expression=Rank(), order_by=order_by))
+        return self.annotate(**{
+            rank_annotation_name: Window(expression=Rank(), order_by=order_by)
+        })
 
 
 class PageableQuerySet(models.QuerySet):
