@@ -83,7 +83,10 @@ class PageableQuerySet(models.QuerySet):
 
     def paginate(self: QS, limit: int) -> QS:
         """
-        A shortcut to the favourite way of paginating for the queryset class. Meant to be overridden.
+        A shortcut to the favourite way of paginating for the queryset class.
+        By default, set to paginate_minmax, which should give the best performance in most cases.
+        Override this method to change the default strategy used by the inheritor queryset class.
+
         :param limit: Size of each page
         :return: iterator with each object being a page of the queryset with maximum size of limit
         """
