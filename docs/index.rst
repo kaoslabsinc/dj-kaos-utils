@@ -20,6 +20,7 @@ Install::
    datetime
    argparse
    management
+   forms
 
 Indices and tables
 ==================
