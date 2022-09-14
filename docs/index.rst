@@ -19,6 +19,7 @@ Install::
    admin
    datetime
    argparse
+   management
 
 Indices and tables
 ==================
