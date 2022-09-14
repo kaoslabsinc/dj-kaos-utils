@@ -1,13 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+import datetime
 
 from dateutil import parser
 from django.utils.timezone import is_aware, make_aware
 
-if TYPE_CHECKING:
-    import datetime
 
-
-def parse_and_make_tz_aware(s: str | None) -> Optional['datetime.datetime']:
+def parse_and_make_tz_aware(s: str | None) -> datetime.datetime | None:
     """
     Parse the string s into a datetime object and make it timezone aware if it is not so already.
 
