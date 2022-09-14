@@ -18,6 +18,7 @@ Install::
    querysets
    admin
    datetime
+   argparse
 
 Indices and tables
 ==================
