@@ -1,6 +1,6 @@
 from django.utils.safestring import mark_safe
 
-from dj_kaos_utils.admin.utils import pp_json, _render_attrs, render_element
+from dj_kaos_utils.admin.utils import pp_json, _render_attrs, render_element, render_img
 
 
 def test_pp_json():
@@ -24,3 +24,8 @@ def test_render_element():
 def test_render_element_children():
     el = render_element('div', mark_safe('<h1>Hey!</h1>'), {'class': "alert alert-success"})
     assert el == '<div class="alert alert-success"><h1>Hey!</h1></div>'
+
+
+def test_render_img():
+    el = render_img("image.png")
+    assert el == '<img src="image.png" alt="">'

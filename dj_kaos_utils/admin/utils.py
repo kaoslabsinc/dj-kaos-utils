@@ -53,3 +53,16 @@ def render_element(tag, children=None, attrs=None):
             """<{tag} {attrs}>{children}</{tag}>""",
             tag=tag, attrs=_render_attrs(attrs), children=children
         )
+
+
+def render_img(src, alt="", attrs=None):
+    """
+    Render img tag with src, alt and attrs
+
+    :param src: src of img
+    :param alt: alt attribute
+    :param attrs: dict of extra attributes
+    :return: safe html of img tag
+    """
+    attrs = attrs or {}
+    return render_element('img', attrs=dict(src=src, alt=alt) | attrs)
