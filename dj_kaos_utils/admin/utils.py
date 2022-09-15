@@ -1,5 +1,6 @@
 import json
 
+from django.utils.html import format_html_join
 from django.utils.safestring import mark_safe
 from pygments import highlight
 from pygments.formatters.html import HtmlFormatter
@@ -18,3 +19,15 @@ def pp_json(obj):
     response = highlight(response, JsonLexer(), formatter)
     style = "<style>" + formatter.get_style_defs() + "</style><br>"
     return mark_safe(style + response)
+
+
+def render_attrs(attrs):
+    """
+    Given dictionary `attrs`, render html attributes with the same keys and values
+
+    :param attrs: dictionary of attributes
+    :return: String of key value pairs in html attributes format
+    """
+    return format_html_join(
+        ' ', '{}="{}"', ((k, v) for k, v in attrs.items())
+    )

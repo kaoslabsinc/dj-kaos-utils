@@ -43,3 +43,4 @@ Utils
 
 .. autofunction:: dj_kaos_utils.admin.utils.pp_json
 
+.. autofunction:: dj_kaos_utils.admin.utils.render_attrs
