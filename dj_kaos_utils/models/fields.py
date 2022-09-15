@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.query_utils import RegisterLookupMixin
 
 
 class TwoPlacesDecimalField(models.DecimalField):
@@ -22,7 +23,42 @@ class MoneyField(TwoPlacesDecimalField):
     description = "An amount of money"
 
 
+class CaseInsensitiveFieldMixin(RegisterLookupMixin):
+    """
+    Field mixin that uses case-insensitive lookup alternatives if they exist.
+    """
+    LOOKUP_CONVERSIONS = {
+        'exact': 'iexact',
+        'contains': 'icontains',
+        'startswith': 'istartswith',
+        'endswith': 'iendswith',
+        'regex': 'iregex',
+    }
+
+    def get_lookup(self, lookup_name):
+        converted = self.LOOKUP_CONVERSIONS.get(lookup_name, lookup_name)
+        return super().get_lookup(converted)
+
+
+class ToLowerCaseFieldMixin(models.Field):
+    """
+    Always save the field as lowercase
+    """
+
+    def to_python(self, value):
+        return super(ToLowerCaseFieldMixin, self).to_python(value).lower()
+
+
+class LowerCaseCharField(ToLowerCaseFieldMixin, CaseInsensitiveFieldMixin, models.CharField):
+    """
+    CharField that saves the values passed to it as lowercase.
+    """
+
+
 __all__ = [
     'TwoPlacesDecimalField',
     'MoneyField',
+    'CaseInsensitiveFieldMixin',
+    'ToLowerCaseFieldMixin',
+    'LowerCaseCharField',
 ]

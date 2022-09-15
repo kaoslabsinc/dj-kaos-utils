@@ -4,3 +4,15 @@ def test_TwoPlacesDecimalField():
 
 def test_MoneyField():
     pass
+
+
+def test_CaseInsensitiveFieldMixin():
+    pass
+
+
+def test_ToLowerCaseFieldMixin():
+    pass
+
+
+def test_LowerCaseCharField():
+    pass
