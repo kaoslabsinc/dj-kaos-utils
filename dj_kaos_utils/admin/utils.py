@@ -55,7 +55,7 @@ def render_element(tag, children=None, attrs=None):
         )
 
 
-def render_img(src, alt="", attrs=None):
+def render_img(src: str, alt="", attrs=None):
     """
     Render img tag with src, alt and attrs
 
@@ -65,7 +65,7 @@ def render_img(src, alt="", attrs=None):
     :return: safe html of img tag
     """
     attrs = attrs or {}
-    return render_element('img', attrs=dict(src=src, alt=alt) | attrs)
+    return render_element('img', attrs={'src': src, 'alt': alt} | attrs)
 
 
 def render_anchor(href: str, children=None, new_tab=True, attrs=None):
