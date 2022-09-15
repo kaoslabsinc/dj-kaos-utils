@@ -36,3 +36,10 @@ Inlines
 
 .. autoclass:: dj_kaos_utils.admin.ReadOnlyInlineMixin
    :show-inheritance:
+
+
+Utils
+-----
+
+.. autofunction:: dj_kaos_utils.admin.utils.pp_json
+
