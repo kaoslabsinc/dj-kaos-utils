@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="docs server" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="serve docs" type="PythonConfigurationType" factoryName="Python">
     <module name="dj-kaos-utils" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
