@@ -29,6 +29,8 @@ class NoChangeInlineMixin(InlineModelAdmin):
         return False
 
 
+# For BB
+
 class AddInlineMixin(NoViewInlineMixin):
     """
     Mixin for inline admin classes. Used to create an inline that is used only as the form interface for the inline
