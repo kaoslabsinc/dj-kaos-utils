@@ -1,6 +1,6 @@
 from django.utils.safestring import mark_safe
 
-from dj_kaos_utils.admin.utils import pp_json, _render_attrs, render_element, render_img
+from dj_kaos_utils.admin.utils import pp_json, _render_attrs, render_element, render_img, render_anchor
 
 
 def test_pp_json():
@@ -29,3 +29,13 @@ def test_render_element_children():
 def test_render_img():
     el = render_img("image.png")
     assert el == '<img src="image.png" alt="">'
+
+
+def test_render_anchor():
+    el = render_anchor("https://google.com", new_tab=False)
+    assert el == '<a href="https://google.com">https://google.com</a>'
+
+
+def test_render_anchor_new_tab():
+    el = render_anchor("https://google.com")
+    assert el == '<a href="https://google.com" target="_blank" rel="noreferrer">https://google.com</a>'

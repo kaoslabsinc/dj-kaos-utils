@@ -44,3 +44,4 @@ Utils
 .. autofunction:: dj_kaos_utils.admin.utils.pp_json
 .. autofunction:: dj_kaos_utils.admin.utils.render_element
 .. autofunction:: dj_kaos_utils.admin.utils.render_img
+.. autofunction:: dj_kaos_utils.admin.utils.render_anchor

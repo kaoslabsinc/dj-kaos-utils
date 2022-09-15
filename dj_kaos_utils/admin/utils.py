@@ -66,3 +66,23 @@ def render_img(src, alt="", attrs=None):
     """
     attrs = attrs or {}
     return render_element('img', attrs=dict(src=src, alt=alt) | attrs)
+
+
+def render_anchor(href: str, children=None, new_tab=True, attrs=None):
+    """
+    Render anchor/link tag with href, children, etc.
+
+    :param href: the href link of the anchor
+    :param children: what to render inside the anchor tag
+    :param new_tab: whether the link should open a new tab
+    :param attrs: other attributes to put on the element
+    :return: anchor tag
+    """
+    attrs = attrs or {}
+    _attrs = {'href': href}
+    if children is None:
+        children = href
+    if new_tab:
+        _attrs['target'] = '_blank'
+        _attrs['rel'] = 'noreferrer'
+    return render_element('a', children, attrs=_attrs | attrs)
