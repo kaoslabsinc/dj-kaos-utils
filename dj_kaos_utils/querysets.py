@@ -1,14 +1,15 @@
 import logging
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, List, Sequence
 
 from django.core.paginator import Paginator
 from django.db import models, transaction
-from django.db.models import Window, F, Min, Max
+from django.db.models import Window, F, Min, Max, Q
 from django.db.models.functions import Rank
 
 logger = logging.getLogger()
 
 QS = TypeVar('QS', bound=models.QuerySet)
+M = TypeVar('M', bound=models.Model)
 
 
 class RankedQuerySetMixin(models.QuerySet):
@@ -121,7 +122,68 @@ class PageableQuerySet(models.QuerySet):
         return count_all
 
 
+class BulkUpdateCreateQuerySet(models.QuerySet):
+    def bulk_update_or_create(
+        self: QS,
+        objs: Sequence[M],
+        lookup_fields: str | list[str],
+        update_fields: Sequence[str],
+    ) -> QS:
+        """
+        Creates or updates in bulk a list of objects
+
+        :param objs: List of model instances
+        :param lookup_fields: Name of field(s) that uniquely identify the objects. You can pass a string to look up
+            using one field, or an itertable to look up using multiple fields
+        :param update_fields: List of fields to update. If value is falsy such as empty list, bulk_update won't run,
+            which is useful for batch creating missing objects.
+        :return: queryset containing all the objects, created and updated.
+        """
+
+        def get_obj_keys_tuple(obj: M, lookup_fields: Sequence[str]):
+            return tuple(getattr(obj, field) for field in lookup_fields)
+
+        def get_filter_q(objs: Sequence[M], lookup_fields: Sequence[str]):
+            if len(lookup_fields) == 1:
+                lookup_field = lookup_fields[0]
+                return Q(**{lookup_field + '__in': [getattr(obj, lookup_field) for obj in objs]})
+
+            q = Q()
+            for obj in objs:
+                q |= Q(**{
+                    field: getattr(obj, field)
+                    for field in lookup_fields
+                })
+            return q
+
+        if isinstance(lookup_fields, str):
+            lookup_fields = (lookup_fields,)
+
+        existing = {
+            get_obj_keys_tuple(obj, lookup_fields): obj
+            for obj in self.filter(get_filter_q(objs, lookup_fields))
+        }
+        bulk_create = []
+        bulk_update = []
+        for obj in objs:
+            lookup_tuple = get_obj_keys_tuple(obj, lookup_fields)
+            if lookup_tuple in existing:
+                existing_obj = existing[lookup_tuple]
+                for field in update_fields:
+                    setattr(existing_obj, field, getattr(obj, field))
+                bulk_update.append(existing_obj)
+            else:
+                bulk_create.append(obj)
+        self.bulk_create(bulk_create)
+        if update_fields:
+            self.bulk_update(bulk_update, update_fields)
+        # Rerunning the queryset to make sure all instances returned have ids. The values in created are pointers to
+        # instances before they have their id
+        return self.filter(get_filter_q(objs, lookup_fields))
+
+
 __all__ = [
     'RankedQuerySetMixin',
     'PageableQuerySet',
+    'BulkUpdateCreateQuerySet',
 ]

@@ -5,7 +5,10 @@ QuerySets
    :members:
    :show-inheritance:
 
-
 .. autoclass:: dj_kaos_utils.querysets.PageableQuerySet
+   :members:
+   :show-inheritance:
+
+.. autoclass:: dj_kaos_utils.querysets.BulkUpdateCreateQuerySet
    :members:
    :show-inheritance:

@@ -28,3 +28,11 @@ def test_PageableQuerySet_paginate():
 
 def test_PageableQuerySet_paginated_update():
     pass
+
+
+def test_BulkUpdateCreateQuerySet():
+    pass
+
+
+def test_BulkUpdateCreateQuerySet_no_update():
+    pass
