@@ -21,6 +21,7 @@ Install::
    argparse
    management
    forms
+   models
 
 Indices and tables
 ==================
