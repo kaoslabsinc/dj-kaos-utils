@@ -1,14 +1,14 @@
 QuerySets
 =========
 
-.. autoclass:: dj_kaos_utils.querysets.RankedQuerySetMixin
+.. autoclass:: dj_kaos_utils.models.RankedQuerySetMixin
    :members:
    :show-inheritance:
 
-.. autoclass:: dj_kaos_utils.querysets.PageableQuerySet
+.. autoclass:: dj_kaos_utils.models.PageableQuerySet
    :members:
    :show-inheritance:
 
-.. autoclass:: dj_kaos_utils.querysets.BulkUpdateCreateQuerySet
+.. autoclass:: dj_kaos_utils.models.BulkUpdateCreateQuerySet
    :members:
    :show-inheritance:

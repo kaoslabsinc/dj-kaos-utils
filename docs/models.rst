@@ -2,7 +2,7 @@ Models
 ======
 
 Fields
--------
+------
 
 .. autoclass:: dj_kaos_utils.models.TwoPlacesDecimalField
    :members: filter
@@ -23,3 +23,8 @@ Fields
 .. autoclass:: dj_kaos_utils.models.LowerCaseCharField
    :members: filter
    :show-inheritance:
+
+QuerySets
+---------
+
+Refer to :doc:`querysets`
