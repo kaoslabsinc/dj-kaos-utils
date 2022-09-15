@@ -25,3 +25,8 @@ class BooleanAdminFilter(admin.SimpleListFilter):
         :return: filtered queryset
         """
         raise NotImplementedError
+
+
+__all__ = [
+    'BooleanAdminFilter',
+]
