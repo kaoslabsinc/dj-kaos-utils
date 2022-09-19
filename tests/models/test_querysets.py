@@ -126,8 +126,14 @@ def test_PageableQuerySet_paginate(db):
         assert page.filter(code_id=i * 1000 + 500).exists
 
 
-def test_PageableQuerySet_paginated_update():
-    pass
+def test_PageableQuerySet_paginated_update(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(10000)
+    ]
+    Product.objects.bulk_create(products)
+    Product.objects.all().paginated_update(1000, lambda page: page.update(price=1000))
+    assert not Product.objects.filter(price__lt=1000).exists()
 
 
 def test_BulkUpdateCreateQuerySet__create(db):
