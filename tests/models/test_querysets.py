@@ -1,3 +1,4 @@
+import pytest
 from django.db import models
 from django.db.models import ExpressionWrapper, F, Value
 
@@ -129,11 +130,27 @@ def test_PageableQuerySet_paginate(db):
 def test_PageableQuerySet_paginated_update(db):
     products = [
         Product(name=f'name{i}', price=0, code_id=str(i))
-        for i in range(10000)
+        for i in range(1000)
     ]
     Product.objects.bulk_create(products)
-    Product.objects.all().paginated_update(1000, lambda page: page.update(price=1000))
+    Product.objects.all().paginated_update(100, lambda page: page.update(price=1000))
     assert not Product.objects.filter(price__lt=1000).exists()
+
+
+def test_PageableQuerySet_paginated_update__atomic(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(1000)
+    ]
+    Product.objects.bulk_create(products)
+
+    def update_page(page):
+        if page[0].code_id == '500':
+            raise Exception
+        return page.update(price=1000)
+    with pytest.raises(Exception):
+        Product.objects.all().paginated_update(100, lambda page: update_page(page))
+    assert Product.objects.filter(price__lt=1000).count() == 500
 
 
 def test_BulkUpdateCreateQuerySet__create(db):
