@@ -62,11 +62,11 @@ def test_PageableQuerySet_paginate_pks(db):
         for i in range(10000)
     ]
     Product.objects.bulk_create(products)
-    for i, page in enumerate(Product.objects.all().paginate_pks(1000)):
+    for i, page in enumerate(Product.objects.all().order_by('pk').paginate_pks(1000)):
         assert page.filter(code_id=i * 1000 + 500).exists
 
     Product.objects.filter(code_id__in=[1, 2, 3, 4]).delete()
-    paginated_qs = Product.objects.all().paginate_pks(10)
+    paginated_qs = Product.objects.all().order_by('pk').paginate_pks(10)
 
     assert next(paginated_qs).count() == 10
     assert next(paginated_qs).count() == 10
@@ -78,7 +78,7 @@ def test_PageableQuerySet_paginate_pks__mutate(db):
         for i in range(100)
     ]
     Product.objects.bulk_create(products)
-    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22'])
+    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22']).order_by('pk')
     pg_qs = qs.paginate_pks(1)
     next_p = next(pg_qs)
     assert next_p[0].name == 'name2'
@@ -93,8 +93,8 @@ def test_PageableQuerySet_paginate_pks_not_simple(db):
         for i in range(1000)
     ]
     Product.objects.bulk_create(products)
-    paginated_qs = Product.objects.all().annotate(field=Value('value')).paginate_pks(10, simple=False)
 
+    paginated_qs = Product.objects.all().order_by('pk').annotate(field=Value('value')).paginate_pks(10, simple=False)
     assert next(paginated_qs)[0].field == 'value'
 
 
@@ -104,7 +104,7 @@ def test_PageableQuerySet_paginate_pks_mutating(db):
         for i in range(100)
     ]
     Product.objects.bulk_create(products)
-    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22'])
+    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22']).order_by('pk')
     pg_qs = qs.paginate_pks_mutating(1)
     next_p = next(pg_qs)
     assert next_p[0].name == 'name2'
