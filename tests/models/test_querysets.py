@@ -43,11 +43,11 @@ def test_RankedQuerySetMixin_asc(db):
 def test_PageableQuerySet_paginate_minmax(db):
     products = [
         Product(name=f'name{i}', price=0, code_id=str(i))
-        for i in range(10000)
+        for i in range(1000)
     ]
     Product.objects.bulk_create(products)
-    for i, page in enumerate(Product.objects.all().paginate_minmax(1000)):
-        assert page.filter(code_id=i * 1000 + 500).exists
+    for i, page in enumerate(Product.objects.all().paginate_minmax(100)):
+        assert page.filter(code_id=i * 100 + 50).exists
 
     Product.objects.filter(code_id__in=[1, 2, 3, 4]).delete()
     paginated_qs = Product.objects.all().paginate_minmax(10)
@@ -59,11 +59,11 @@ def test_PageableQuerySet_paginate_minmax(db):
 def test_PageableQuerySet_paginate_pks(db):
     products = [
         Product(name=f'name{i}', price=0, code_id=str(i))
-        for i in range(10000)
+        for i in range(1000)
     ]
     Product.objects.bulk_create(products)
-    for i, page in enumerate(Product.objects.all().order_by('pk').paginate_pks(1000)):
-        assert page.filter(code_id=i * 1000 + 500).exists
+    for i, page in enumerate(Product.objects.all().order_by('pk').paginate_pks(100)):
+        assert page.filter(code_id=i * 100 + 50).exists
 
     Product.objects.filter(code_id__in=[1, 2, 3, 4]).delete()
     paginated_qs = Product.objects.all().order_by('pk').paginate_pks(10)
