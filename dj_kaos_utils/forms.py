@@ -19,7 +19,7 @@ class UnrequiredFieldsFormMixin(forms.Form):
                 self.fields[field].required = False
 
 
-def unrequire_form(form_or_model_cls: Type[forms.Form] | Type[models.Model], unrequired_fields: Sequence[str]):
+def unrequire_form(form_or_model_cls: Type[forms.BaseModelForm] | Type[models.Model], unrequired_fields: Sequence[str]):
     """
     Make fields denoted by `unrequired_fields` be not required on the form or model form denoted by `form_or_model_cls`.
 
