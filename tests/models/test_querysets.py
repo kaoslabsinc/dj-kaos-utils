@@ -1,12 +1,43 @@
+from django.db import models
+from django.db.models import ExpressionWrapper, F
+
 from simple.models import Product
 
 
-def test_RankedQuerySetMixin():
-    pass
+def test_RankedQuerySetMixin(db):
+    products = [
+        Product(name='name', price=i, code_id=str(i))
+        for i in [1, 2, 3, 3, 4]
+    ]
+    Product.objects.bulk_create(products)
+    ranked = list(Product.objects.all().annotate(
+        price2=ExpressionWrapper(F('price'), output_field=models.IntegerField())
+    ).annotate_rank('price2').values_list('code_id', 'rank').order_by('-code_id'))
+    assert ranked == [
+        ('4', 1),
+        ('3', 2),
+        ('3', 2),
+        ('2', 4),
+        ('1', 5),
+    ]
 
 
-def test_RankedQuerySetMixin_asc():
-    pass
+def test_RankedQuerySetMixin_asc(db):
+    products = [
+        Product(name='name', price=i, code_id=str(i))
+        for i in [1, 2, 3, 3, 4]
+    ]
+    Product.objects.bulk_create(products)
+    ranked = list(Product.objects.all().annotate(
+        price2=ExpressionWrapper(F('price'), output_field=models.IntegerField())
+    ).annotate_rank('price2', asc=True).values_list('code_id', 'rank').order_by('code_id'))
+    assert ranked == [
+        ('1', 1),
+        ('2', 2),
+        ('3', 3),
+        ('3', 3),
+        ('4', 5),
+    ]
 
 
 def test_PageableQuerySet_paginate_minmax():
