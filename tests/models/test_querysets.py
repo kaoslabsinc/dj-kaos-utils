@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import ExpressionWrapper, F
+from django.db.models import ExpressionWrapper, F, Value
 
 from simple.models import Product
 
@@ -43,7 +43,7 @@ def test_RankedQuerySetMixin_asc(db):
 def test_PageableQuerySet_paginate_minmax(db):
     products = [
         Product(name=f'name{i}', price=0, code_id=str(i))
-        for i in range(1000)
+        for i in range(10000)
     ]
     Product.objects.bulk_create(products)
     for i, page in enumerate(Product.objects.all().paginate_minmax(1000)):
@@ -56,20 +56,71 @@ def test_PageableQuerySet_paginate_minmax(db):
     assert next(paginated_qs).count() == 10
 
 
-def test_PageableQuerySet_paginate_pks():
-    pass
+def test_PageableQuerySet_paginate_pks(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(10000)
+    ]
+    Product.objects.bulk_create(products)
+    for i, page in enumerate(Product.objects.all().paginate_pks(1000)):
+        assert page.filter(code_id=i * 1000 + 500).exists
+
+    Product.objects.filter(code_id__in=[1, 2, 3, 4]).delete()
+    paginated_qs = Product.objects.all().paginate_pks(10)
+
+    assert next(paginated_qs).count() == 10
+    assert next(paginated_qs).count() == 10
 
 
-def test_PageableQuerySet_paginate_pks_not_simple():
-    pass
+def test_PageableQuerySet_paginate_pks__mutate(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(100)
+    ]
+    Product.objects.bulk_create(products)
+    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22'])
+    pg_qs = qs.paginate_pks(1)
+    next_p = next(pg_qs)
+    assert next_p[0].name == 'name2'
+    next_p.update(name='name45')
+    next_p = next(pg_qs)
+    assert next_p[0].name == 'name22'
 
 
-def test_PageableQuerySet_paginate_pks_mutating():
-    pass
+def test_PageableQuerySet_paginate_pks_not_simple(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(1000)
+    ]
+    Product.objects.bulk_create(products)
+    paginated_qs = Product.objects.all().annotate(field=Value('value')).paginate_pks(10, simple=False)
+
+    assert next(paginated_qs)[0].field == 'value'
 
 
-def test_PageableQuerySet_paginate():
-    pass
+def test_PageableQuerySet_paginate_pks_mutating(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(100)
+    ]
+    Product.objects.bulk_create(products)
+    qs = Product.objects.filter(name__in=['name2', 'name12', 'name22'])
+    pg_qs = qs.paginate_pks_mutating(1)
+    next_p = next(pg_qs)
+    assert next_p[0].name == 'name2'
+    next_p.update(name='name45')
+    next_p = next(pg_qs)
+    assert next_p[0].name == 'name12'
+
+
+def test_PageableQuerySet_paginate(db):
+    products = [
+        Product(name=f'name{i}', price=0, code_id=str(i))
+        for i in range(10000)
+    ]
+    Product.objects.bulk_create(products)
+    for i, page in enumerate(Product.objects.all().paginate(1000)):
+        assert page.filter(code_id=i * 1000 + 500).exists
 
 
 def test_PageableQuerySet_paginated_update():
