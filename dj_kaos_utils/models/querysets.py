@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, TypeVar, List, Sequence
+from typing import Callable, TypeVar, Sequence
 
 from django.core.paginator import Paginator
 from django.db import models, transaction
@@ -126,7 +126,7 @@ class BulkUpdateCreateQuerySet(models.QuerySet):
     def bulk_update_or_create(
         self: QS,
         objs: Sequence[M],
-        lookup_fields: str | list[str],
+        lookup_fields: str | Sequence[str],
         update_fields: Sequence[str],
     ) -> QS:
         """

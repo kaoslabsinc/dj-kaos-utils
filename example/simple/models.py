@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 
-from dj_kaos_utils.models import HasAutoFields, MoneyField, LowerCaseCharField
+from dj_kaos_utils.models import HasAutoFields, MoneyField, LowerCaseCharField, BulkUpdateCreateQuerySet
 
 
 class Category(HasAutoFields, models.Model):
@@ -18,3 +18,5 @@ class Product(models.Model):
     price = MoneyField()
 
     code_id = LowerCaseCharField(max_length=255)
+
+    objects = BulkUpdateCreateQuerySet.as_manager()
