@@ -1,9 +1,13 @@
+from simple.models import Product
+
+
 def test_TwoPlacesDecimalField():
     pass
 
 
 def test_MoneyField():
-    pass
+    product = Product(name="Product", price=21.30)
+    assert product.price
 
 
 def test_CaseInsensitiveFieldMixin():
