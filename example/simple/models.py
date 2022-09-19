@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 
-from dj_kaos_utils.models import HasAutoFields, MoneyField
+from dj_kaos_utils.models import HasAutoFields, MoneyField, LowerCaseCharField
 
 
 class Category(HasAutoFields, models.Model):
@@ -16,3 +16,5 @@ class Category(HasAutoFields, models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=255)
     price = MoneyField()
+
+    code_id = LowerCaseCharField(max_length=255)

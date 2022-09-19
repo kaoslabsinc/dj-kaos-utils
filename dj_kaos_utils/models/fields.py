@@ -49,7 +49,7 @@ class ToLowerCaseFieldMixin(models.Field):
         return super(ToLowerCaseFieldMixin, self).to_python(value).lower()
 
 
-class LowerCaseCharField(ToLowerCaseFieldMixin, CaseInsensitiveFieldMixin, models.CharField):
+class LowerCaseCharField(CaseInsensitiveFieldMixin, ToLowerCaseFieldMixin, models.CharField):
     """
     CharField that saves the values passed to it as lowercase.
     """
