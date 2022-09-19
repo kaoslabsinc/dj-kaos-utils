@@ -154,6 +154,7 @@ def test_PageableQuerySet_paginated_update__atomic(db):
         if page[0].code_id == '500':
             raise Exception
         return page.update(price=1000)
+
     with pytest.raises(Exception):
         Product.objects.all().paginated_update(100, lambda page: update_page(page))
     assert Product.objects.filter(price__lt=1000).count() == 500
