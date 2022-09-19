@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.text import slugify
 
 from dj_kaos_utils.models import HasAutoFields, MoneyField, LowerCaseCharField, BulkUpdateCreateQuerySet, \
-    RankedQuerySetMixin
+    RankedQuerySetMixin, PageableQuerySet
 
 
 class Category(HasAutoFields, models.Model):
@@ -14,7 +14,7 @@ class Category(HasAutoFields, models.Model):
             self.slug = slugify(self.name)
 
 
-class ProductQuerySet(RankedQuerySetMixin, BulkUpdateCreateQuerySet):
+class ProductQuerySet(PageableQuerySet, RankedQuerySetMixin, BulkUpdateCreateQuerySet):
     pass
 
 
