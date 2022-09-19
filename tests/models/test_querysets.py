@@ -97,6 +97,9 @@ def test_PageableQuerySet_paginate_pks_not_simple(db):
     paginated_qs = Product.objects.all().order_by('pk').annotate(field=Value('value')).paginate_pks(10, simple=False)
     assert next(paginated_qs)[0].field == 'value'
 
+    paginated_qs = Product.objects.all().order_by('pk').annotate(field=Value('value')).paginate_pks(10, simple=True)
+    assert getattr(next(paginated_qs)[0], 'field', 'nope') == 'nope'
+
 
 def test_PageableQuerySet_paginate_pks_mutating(db):
     products = [
