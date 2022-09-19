@@ -41,6 +41,12 @@ def test_RankedQuerySetMixin_asc(db):
     ]
 
 
+def test_PageableQuerySet_paginate_minmax__empty(db):
+    pg_qs = Product.objects.all().paginate_minmax(100)
+    with pytest.raises(StopIteration):
+        next(pg_qs)
+
+
 def test_PageableQuerySet_paginate_minmax(db):
     products = [
         Product(name=f'name{i}', price=0, code_id=str(i))
