@@ -31,3 +31,7 @@ Mixins
 .. autoclass:: dj_kaos_utils.models.HasAutoFields
    :members: set_auto_fields
    :show-inheritance:
+
+.. autoclass:: dj_kaos_utils.models.HasInitials
+   :members: initials
+   :show-inheritance:
