@@ -35,3 +35,7 @@ Mixins
 .. autoclass:: dj_kaos_utils.models.HasInitials
    :members: initials
    :show-inheritance:
+
+.. autoclass:: dj_kaos_utils.models.HasWarnings
+   :members: warnings
+   :show-inheritance:

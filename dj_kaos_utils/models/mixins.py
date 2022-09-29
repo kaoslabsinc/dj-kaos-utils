@@ -39,7 +39,19 @@ class HasInitials:
         return create_initials(getattr(self, self.take_initials_from))
 
 
+class HasWarnings:
+    """Adds a property `warnings` useful to catch issues that aren't worthy of throwing a `ValidationError`"""
+
+    def get_warnings(self):
+        """
+        Override this method and append any warnings to the result of calling `super()`
+        :return: A list of warnings
+        """
+        return []
+
+
 __all__ = [
     'HasAutoFields',
     'HasInitials',
+    'HasWarnings',
 ]
