@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from py_kaos_utils.string import create_initials
 
 
@@ -42,10 +44,11 @@ class HasInitials:
 class HasWarnings:
     """Adds a property `warnings` useful to catch issues that aren't worthy of throwing a `ValidationError`"""
 
-    def get_warnings(self):
+    def get_warnings(self) -> Sequence[str | tuple[str, str]]:
         """
         Override this method and append any warnings to the result of calling `super()`
-        :return: A list of warnings
+        :return: A list of warnings. Each item in the list is either a tuple of (field_name, warning description) or
+        just warning description.
         """
         return []
 
