@@ -14,12 +14,14 @@ class HasWarningsAdmin(BaseModelAdmin):
 
     @admin.display(description="warnings")
     def warnings_display(self, obj: HasWarnings):
+        processed_warnings = (
+            warning if isinstance(warning, str) else format_html("<code>{}</code>: {}", *warning)
+            for warning in obj.get_warnings()
+        )
+
         return obj and format_html(
             "<ol>{}</ol>",
-            format_html_join('\n', '<li>{}</li>', zip(
-                warning if isinstance(warning, str) else f"{warning[0]}: {warning[1]}"
-                for warning in obj.get_warnings()
-            ))
+            format_html_join('\n', '<li>{}</li>', zip(processed_warnings))
         )
 
 
