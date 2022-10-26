@@ -41,4 +41,12 @@ def unrequire_form(form_or_model_cls: Type[BaseForm] | Type[models.Model], unreq
         class UnrequiredModelForm(UnrequiredFieldsFormMixin, form_cls):
             unrequired_fields = _unreq_fields
 
+    UnrequiredModelForm.__name__ = "Unrequired" + form_cls.__name__
+
     return UnrequiredModelForm
+
+
+__all__ = (
+    'UnrequiredFieldsFormMixin',
+    'unrequire_form',
+)
