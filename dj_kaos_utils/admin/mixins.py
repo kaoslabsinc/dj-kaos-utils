@@ -1,4 +1,5 @@
 from django.contrib.admin.options import BaseModelAdmin
+from django.shortcuts import get_object_or_404
 from django_object_actions import BaseDjangoObjectActions
 
 
