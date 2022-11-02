@@ -4,6 +4,8 @@ from typing import Type
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from .utils import get_lookup_values
+
 
 class RelatedModelSerializer(serializers.ModelSerializer):
     lookup_field = None
@@ -95,7 +97,60 @@ def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer],
     return WritableNestedXXX
 
 
+class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
+    default_related_lookup_field = 'uuid'
+
+    def __init__(self, *args, **kwargs):
+        self.related_fields = self._get_related_fields()
+        super().__init__(*args, **kwargs)
+
+    def _get_related_fields(self):
+        related_fields = {}
+        for item in self.Meta.related_fields:
+            if isinstance(item, tuple):
+                field, lookup = item
+            else:
+                field, lookup = item, self.default_related_lookup_field
+            related_fields[field] = lookup
+        return related_fields
+
+    def create(self, validated_data):
+        rel_data_dict = {}
+        for field in self.related_fields:
+            rel_data_dict[field] = validated_data.pop(field)
+
+        instance = super().create(validated_data)
+
+        for field, data_list in rel_data_dict.items():
+            for data in data_list:
+                getattr(instance, field).create(**data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        rel_data_dict = {}
+        for field in self.Meta.related_fields:
+            rel_data_dict[field] = validated_data.pop(field)
+
+        instance = super().update(instance, validated_data)
+
+        for field, data_list in rel_data_dict.items():
+            lookup = self.related_fields[field]
+            getattr(instance, field).exclude(
+                **{f'{lookup}__in': get_lookup_values(data_list, lookup)}
+            ).delete()
+
+            for data in data_list:
+                if lookup_value := data.pop(lookup, None):
+                    instance.adjustments.update_or_create(**{lookup: lookup_value}, defaults=data)
+                else:
+                    instance.adjustments.create(**data)
+
+        return instance
+
+
 __all__ = (
     'RelatedModelSerializer',
     'make_nested_writable',
+    'HasRelatedFieldsModelSerializer',
 )
