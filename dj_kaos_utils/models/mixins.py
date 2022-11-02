@@ -1,5 +1,3 @@
-from typing import Sequence
-
 from py_kaos_utils.string import create_initials
 
 

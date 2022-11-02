@@ -1,12 +1,11 @@
 from typing import Sequence, Type
 
-from django import forms
 from django.db import models
 from django.db.models.base import ModelBase
-from django.forms import modelform_factory
+from django.forms import modelform_factory, BaseForm
 
 
-class UnrequiredFieldsFormMixin(forms.Form):
+class UnrequiredFieldsFormMixin(BaseForm):
     """
     Make fields denoted by `unrequired_fields` be not required on the form
     """
@@ -19,7 +18,7 @@ class UnrequiredFieldsFormMixin(forms.Form):
                 self.fields[field].required = False
 
 
-def unrequire_form(form_or_model_cls: Type[forms.BaseModelForm] | Type[models.Model], unrequired_fields: Sequence[str]):
+def unrequire_form(form_or_model_cls: Type[BaseForm] | Type[models.Model], unrequired_fields: Sequence[str]):
     """
     Make fields denoted by `unrequired_fields` be not required on the form or model form denoted by `form_or_model_cls`.
 
@@ -35,7 +34,19 @@ def unrequire_form(form_or_model_cls: Type[forms.BaseModelForm] | Type[models.Mo
     else:
         form_cls = form_or_model_cls
 
-    class UnrequiredModelForm(UnrequiredFieldsFormMixin, form_cls):
-        unrequired_fields = _unreq_fields
+    if issubclass(form_cls, UnrequiredFieldsFormMixin):
+        class UnrequiredModelForm(form_cls):
+            unrequired_fields = (*form_cls.unrequired_fields, *_unreq_fields)
+    else:
+        class UnrequiredModelForm(UnrequiredFieldsFormMixin, form_cls):
+            unrequired_fields = _unreq_fields
+
+    UnrequiredModelForm.__name__ = "Unrequired" + form_cls.__name__
 
     return UnrequiredModelForm
+
+
+__all__ = (
+    'UnrequiredFieldsFormMixin',
+    'unrequire_form',
+)
