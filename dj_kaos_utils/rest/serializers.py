@@ -32,13 +32,10 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         except model.DoesNotExist:
             raise ValidationError({lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."})
 
-
-    def create_object(self, validated_data):
-        model, lookup_field, lookup_value = self._get_model_cls_and_lookup(validated_data)
-        return self.create(validated_data)
-
     def update_object(self, validated_data):
         model, lookup_field, lookup_value = self._get_model_cls_and_lookup(validated_data)
+        if lookup_value is MISSING:
+            raise ValidationError({lookup_field: f"{lookup_field} is required to update the object"})
         instance = self.get_object(validated_data)
         validated_data.pop(lookup_field)
         self.update(instance, validated_data)
@@ -66,6 +63,18 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         return self._x_or_create_object(validated_data, update=True)
 
     def to_internal_value(self, data):
+        """
+            should_create   should_update   lookup_field    |   Action
+            ------------------------------------------------|------------------------------------------------------
+            true            true            exists          |   update_or_create(lookup_field=lookup_value)
+            true            true            missing         |   create()
+            true            false           exists          |   get_or_create(lookup_field=lookup_value)
+            true            false           missing         |   create()
+            false           true            exists          |   update() # ValidationError if object does not exist
+            false           true            missing         |   ValidationError
+            false           false           exists          |   get()    # ValidationError if object does not exist
+            false           false           missing         |   ValidationError
+        """
         assert self.lookup_field is not None, "You should specify lookup_field"
         if self.should_create and self.should_update:
             return self.update_or_create_object(data)[0]
