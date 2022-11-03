@@ -35,21 +35,18 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         lookup_value = data.pop(lookup_field, None)
         model = self.Meta.model
 
-        if lookup_value is not None and not data:
-            # e.g. { uuid: "123-1234-..." }
+        if lookup_value is not None and not data:  # e.g. { uuid: "xxxxxxxx-xxxx-..." }
             if self.can_get:
                 return self._get_object(model, lookup_field, lookup_value)
             else:
                 raise ValidationError("This api is not configured to get existing objects")
-        elif lookup_value is not None and data:
-            # e.g. { uuid: "123-1234-...", name : "Name" }
+        elif lookup_value is not None and data:  # e.g. { uuid: "xxxxxxxx-xxxx-...", name : "Name" }
             if self.can_update:
                 instance = self._get_object(model, lookup_field, lookup_value)
                 return self.update(instance, data)
             else:
                 raise ValidationError("This api is not configured to update existing objects")
-        elif lookup_value is None and data:
-            # e.g. { name : "Name" }
+        elif lookup_value is None and data:  # e.g. { name : "Name" }
             if self.can_create:
                 return self.create(data)
             else:
