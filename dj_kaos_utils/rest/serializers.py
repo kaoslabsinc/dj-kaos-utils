@@ -30,8 +30,11 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         if lookup_value is MISSING:
             # TODO: should be caught in validation
             raise ValidationError({lookup_field: f"{lookup_field} is required to look up the object"})
-        # TODO: Should we also check the validity of the lookup value during validation?
-        return model.objects.get(**{lookup_field: lookup_value})
+        try:
+            return model.objects.get(**{lookup_field: lookup_value})
+        except model.DoesNotExist:
+            raise ValidationError({lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."})
+
 
     def create_object(self, validated_data):
         model, lookup_field, lookup_value = self._get_model_cls_and_lookup(validated_data)
