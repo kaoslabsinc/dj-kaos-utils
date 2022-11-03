@@ -60,7 +60,7 @@ class RelatedModelSerializer(serializers.ModelSerializer):
 
 def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer],
                          lookup_field=None,
-                         can_get=False,
+                         can_get=True,
                          can_create=False,
                          can_update=False):
     class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
