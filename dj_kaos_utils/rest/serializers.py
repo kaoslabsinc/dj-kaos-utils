@@ -58,11 +58,13 @@ class RelatedModelSerializer(serializers.ModelSerializer):
             raise ValidationError("data is empty")
 
 
-def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer],
-                         lookup_field=None,
-                         can_get=True,
-                         can_create=False,
-                         can_update=False):
+def make_nested_writable(
+    serializer_cls: Type[serializers.ModelSerializer],
+    lookup_field=RelatedModelSerializer.lookup_field,
+    can_get=RelatedModelSerializer.can_get,
+    can_create=RelatedModelSerializer.can_create,
+    can_update=RelatedModelSerializer.can_update
+):
     class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
         pass
 
