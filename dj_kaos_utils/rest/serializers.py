@@ -27,9 +27,6 @@ class RelatedModelSerializer(serializers.ModelSerializer):
 
     def get_object(self, validated_data):
         model, lookup_field, lookup_value = self._get_model_cls_and_lookup(validated_data)
-        if lookup_value is MISSING:
-            # TODO: should be caught in validation
-            raise ValidationError({lookup_field: f"{lookup_field} is required to look up the object"})
         try:
             return model.objects.get(**{lookup_field: lookup_value})
         except model.DoesNotExist:
@@ -38,11 +35,6 @@ class RelatedModelSerializer(serializers.ModelSerializer):
 
     def create_object(self, validated_data):
         model, lookup_field, lookup_value = self._get_model_cls_and_lookup(validated_data)
-        if lookup_value is not MISSING:
-            # TODO: should be caught in validation
-            raise ValidationError({
-                lookup_field: f"{lookup_field} is defined but shouldn't be since we only want to create new objects"
-            })
         return self.create(validated_data)
 
     def update_object(self, validated_data):
