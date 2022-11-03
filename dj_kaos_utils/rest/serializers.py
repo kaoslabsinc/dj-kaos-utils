@@ -6,10 +6,6 @@ from rest_framework.exceptions import ValidationError
 from .utils import get_lookup_values
 
 
-def _get_object(model, lookup_field, lookup_value):
-    return model.objects.get(**{lookup_field: lookup_value})
-
-
 class RelatedModelSerializer(serializers.ModelSerializer):
     lookup_field = None
     can_get = True
@@ -23,6 +19,15 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         self.can_update = kwargs.pop('can_update', self.can_update)
         super().__init__(*args, **kwargs)
 
+    @staticmethod
+    def _get_object(model, lookup_field, lookup_value):
+        try:
+            return model.objects.get(**{lookup_field: lookup_value})
+        except model.DoesNotExist:
+            raise ValidationError({
+                lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+            })
+
     def to_internal_value(self, data):
         lookup_field = self.lookup_field
         assert lookup_field is not None, "You should specify lookup_field"
@@ -33,13 +38,13 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         if lookup_value is not None and not data:
             # e.g. { uuid: "123-1234-..." }
             if self.can_get:
-                return _get_object(model, lookup_field, lookup_value)
+                return self._get_object(model, lookup_field, lookup_value)
             else:
                 raise ValidationError("This api is not configured to get existing objects")
         elif lookup_value is not None and data:
             # e.g. { uuid: "123-1234-...", name : "Name" }
             if self.can_update:
-                instance = _get_object(model, lookup_field, lookup_value)
+                instance = self._get_object(model, lookup_field, lookup_value)
                 return self.update(instance, data)
             else:
                 raise ValidationError("This api is not configured to update existing objects")
