@@ -28,5 +28,23 @@ def test_serializer_create(db):
     }
     serializer = nested_writable(data=data)
     assert serializer.is_valid()
-    obj = serializer.validated_data
-    Product.objects.get(id=obj.id)
+    created_obj = serializer.validated_data
+    Product.objects.get(id=created_obj.id)
+
+def test_serializer_update(db):
+    nested_writable = make_nested_writable(ProductModelSerializer, can_update=True)
+    data = {
+        'name': "Product 1",
+        'price': '1.00',
+        'code_id': 'id01',
+    }
+    obj = Product.objects.create(**data)
+    data = {
+        'id': obj.id,
+        'name': "New Name",
+    }
+    serializer = nested_writable(data=data)
+    assert serializer.is_valid()
+    updated_obj = serializer.validated_data
+    assert updated_obj.name == "New Name"
+    Product.objects.count() == 1
