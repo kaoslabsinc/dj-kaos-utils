@@ -4,12 +4,12 @@ from simple.models import Product
 from rest_framework.serializers import ModelSerializer
 import pytest
 
-empty = dict(can_create=False, can_update=False, can_get=False)
+empty = dict(can_create=False, can_update=False, can_get=False)  # TODO
 get = dict(can_create=False, can_update=False, can_get=True)  # done
 update = dict(can_create=False, can_update=True, can_get=False)  # done
 update_get = dict(can_create=False, can_update=True, can_get=True)
 create = dict(can_create=True, can_update=False, can_get=False)  # done
-create_get = dict(can_create=True, can_update=False, can_get=True)
+create_get = dict(can_create=True, can_update=False, can_get=True)  # done
 create_update = dict(can_create=True, can_update=True, can_get=False)  # done
 create_update_get = dict(can_create=True, can_update=True, can_get=True)
 
@@ -110,4 +110,16 @@ def test_serializer_create_get_do_create(db):
 def test_serializer_create_get_do_get(db, created_product):
     nested_writable = make_nested_writable(ProductModelSerializer,
                                            **create_get)
+    _test_get(created_product, nested_writable)
+
+
+def test_serializer_update_get_do_update(db, created_product):
+    nested_writable = make_nested_writable(ProductModelSerializer,
+                                           **update_get)
+    _test_update(created_product, nested_writable)
+
+
+def test_serializer_update_get_do_get(db, created_product):
+    nested_writable = make_nested_writable(ProductModelSerializer,
+                                           **update_get)
     _test_get(created_product, nested_writable)
