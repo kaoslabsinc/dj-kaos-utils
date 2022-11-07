@@ -4,6 +4,15 @@ from simple.models import Product
 from rest_framework.serializers import ModelSerializer
 import pytest
 
+empty = dict(can_create=False, can_update=False, can_get=False)
+get = dict(can_create=False, can_update=False, can_get=True)  # done
+update = dict(can_create=False, can_update=True, can_get=False)  # done
+update_get = dict(can_create=False, can_update=True, can_get=True)
+create = dict(can_create=True, can_update=False, can_get=False)  # done
+create_get = dict(can_create=True, can_update=False, can_get=True)
+create_update = dict(can_create=True, can_update=True, can_get=False)  # done
+create_update_get = dict(can_create=True, can_update=True, can_get=True)
+
 
 class ProductModelSerializer(ModelSerializer):
 
@@ -60,33 +69,45 @@ def _test_get(created_product, nested_writable):
     assert obj.id == created_product.id
 
 
+def test_serializer_empty(db):
+    nested_writable = make_nested_writable(ProductModelSerializer, **empty)
+    # TODO https://github.com/kaoslabsinc/dj-kaos-utils/issues/6
+
+
 def test_serializer_create(db):
-    nested_writable = make_nested_writable(ProductModelSerializer,
-                                           can_create=True)
+    nested_writable = make_nested_writable(ProductModelSerializer, **create)
     _test_create(nested_writable)
 
 
 def test_serializer_update(db, created_product):
-    nested_writable = make_nested_writable(ProductModelSerializer,
-                                           can_update=True)
+    nested_writable = make_nested_writable(ProductModelSerializer, **update)
     _test_update(created_product, nested_writable)
 
 
 def test_serializer_get(db, created_product):
-    nested_writable = make_nested_writable(ProductModelSerializer,
-                                           can_get=True)
+    nested_writable = make_nested_writable(ProductModelSerializer, **get)
     _test_get(created_product, nested_writable)
 
 
 def test_serializer_create_update_do_create(db):
     nested_writable = make_nested_writable(ProductModelSerializer,
-                                           can_create=True,
-                                           can_update=True)
+                                           **create_update)
     _test_create(nested_writable)
 
 
 def test_serializer_create_update_do_update(db, created_product):
     nested_writable = make_nested_writable(ProductModelSerializer,
-                                           can_create=True,
-                                           can_update=True)
+                                           **create_update)
     _test_update(created_product, nested_writable)
+
+
+def test_serializer_create_get_do_create(db):
+    nested_writable = make_nested_writable(ProductModelSerializer,
+                                           **create_get)
+    _test_create(nested_writable)
+
+
+def test_serializer_create_get_do_get(db, created_product):
+    nested_writable = make_nested_writable(ProductModelSerializer,
+                                           **create_get)
+    _test_get(created_product, nested_writable)
