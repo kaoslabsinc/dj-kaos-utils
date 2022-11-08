@@ -19,7 +19,11 @@ class ProductQuerySet(PageableQuerySet, RankedQuerySetMixin, BulkUpdateCreateQue
 
 
 class Product(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, related_name='products')
+    category = models.ForeignKey(Category,
+                                 on_delete=models.CASCADE,
+                                 null=True,
+                                 blank=True,
+                                 related_name='products')
     name = models.CharField(max_length=255)
     price = MoneyField()
 
