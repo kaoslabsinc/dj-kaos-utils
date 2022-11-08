@@ -1,8 +1,7 @@
 from typing import Type
 
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-
+from rest_framework.settings import api_settings
 from .utils import get_lookup_values
 
 
@@ -24,8 +23,9 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         try:
             return model.objects.get(**{lookup_field: lookup_value})
         except model.DoesNotExist:
-            raise ValidationError({
-                lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+            raise serializers.ValidationError({
+                lookup_field:
+                f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
             })
 
     def to_internal_value(self, data):
@@ -39,20 +39,30 @@ class RelatedModelSerializer(serializers.ModelSerializer):
             if self.can_get:
                 return self._get_object(model, lookup_field, lookup_value)
             else:
-                raise ValidationError("This api is not configured to get existing objects")
+                raise serializers.ValidationError({
+                    api_settings.NON_FIELD_ERRORS_KEY:
+                    "This api is not configured to get existing objects"
+                })
         elif lookup_value is not None and data:  # e.g. { uuid: "xxxxxxxx-xxxx-...", name : "Name" }
             if self.can_update:
                 instance = self._get_object(model, lookup_field, lookup_value)
                 return self.update(instance, data)
             else:
-                raise ValidationError("This api is not configured to update existing objects")
+                raise serializers.ValidationError({
+                    api_settings.NON_FIELD_ERRORS_KEY:
+                    "This api is not configured to update existing objects"
+                })
         elif lookup_value is None and data:  # e.g. { name : "Name" }
             if self.can_create:
                 return self.create(data)
             else:
-                raise ValidationError("This api is not configured to create new objects")
+                raise serializers.ValidationError({
+                    api_settings.NON_FIELD_ERRORS_KEY:
+                    "This api is not configured to create new objects"
+                })
         else:
-            raise ValidationError("data is empty")
+            raise serializers.ValidationError(
+                {api_settings.NON_FIELD_ERRORS_KEY: "data is empty"})
 
 
 def make_nested_writable(
