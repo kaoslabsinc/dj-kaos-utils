@@ -101,6 +101,8 @@ def render_admin_link(obj, **kwargs):
     admin_link = get_admin_link(obj)
     if admin_link:
         return render_anchor(admin_link, str(obj), **kwargs)
+    else:
+        return str(obj)
 
 
 __all__ = (
