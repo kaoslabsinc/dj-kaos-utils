@@ -59,5 +59,6 @@ def test_serializer_create(db):
 
     serializer = CategorySerializer(data=category_data)
     assert serializer.is_valid()
+    d = serializer.validated_data  # This is a dict
     created_category = serializer.save()
     assert created_category.products.count() == 1

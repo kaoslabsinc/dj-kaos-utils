@@ -54,7 +54,7 @@ def _test_update(created_product, nested_writable):
     }
     serializer = nested_writable(data=data)
     assert serializer.is_valid()
-    updated_obj = serializer.validated_data
+    updated_obj = serializer.validated_data  # This is an object
     assert updated_obj.id == created_product.id
     assert updated_obj.name == "New Name"
 
