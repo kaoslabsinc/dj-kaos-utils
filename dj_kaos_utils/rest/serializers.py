@@ -2,6 +2,7 @@ from typing import Type
 
 from rest_framework import serializers
 from rest_framework.settings import api_settings
+
 from .utils import get_lookup_values
 
 
@@ -24,8 +25,7 @@ class RelatedModelSerializer(serializers.ModelSerializer):
             return model.objects.get(**{lookup_field: lookup_value})
         except model.DoesNotExist:
             raise serializers.ValidationError({
-                lookup_field:
-                f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+                lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
             })
 
     def to_internal_value(self, data):
@@ -40,8 +40,7 @@ class RelatedModelSerializer(serializers.ModelSerializer):
                 return self._get_object(model, lookup_field, lookup_value)
             else:
                 raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY:
-                    "This api is not configured to get existing objects"
+                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to get existing objects"
                 })
         elif lookup_value is not None and data:  # e.g. { uuid: "xxxxxxxx-xxxx-...", name : "Name" }
             if self.can_update:
@@ -49,20 +48,19 @@ class RelatedModelSerializer(serializers.ModelSerializer):
                 return self.update(instance, data)
             else:
                 raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY:
-                    "This api is not configured to update existing objects"
+                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
                 })
         elif lookup_value is None and data:  # e.g. { name : "Name" }
             if self.can_create:
                 return self.create(data)
             else:
                 raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY:
-                    "This api is not configured to create new objects"
+                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
                 })
         else:
-            raise serializers.ValidationError(
-                {api_settings.NON_FIELD_ERRORS_KEY: "data is empty"})
+            raise serializers.ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: "data is empty"
+            })
 
 
 def make_nested_writable(
@@ -101,6 +99,15 @@ class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
             related_fields[field] = lookup
         return related_fields
 
+    @staticmethod
+    def _get_object(qs, lookup_field, lookup_value):
+        try:
+            return qs.get(**{lookup_field: lookup_value})
+        except qs.model.DoesNotExist:
+            raise serializers.ValidationError({
+                lookup_field: f"{qs.model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+            })
+
     def create(self, validated_data):
         rel_data_dict = {}
         for field in self.related_fields:
@@ -122,16 +129,25 @@ class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         for field, data_list in rel_data_dict.items():
+            rel_manager = getattr(instance, field)
             lookup = self.related_fields[field]
-            getattr(instance, field).exclude(
+            rel_manager.exclude(
                 **{f'{lookup}__in': get_lookup_values(data_list, lookup)}
             ).delete()
 
             for data in data_list:
-                if lookup_value := data.pop(lookup, None):
-                    instance.adjustments.update_or_create(**{lookup: lookup_value}, defaults=data)
+                lookup_value = data.pop(lookup, None)
+                if lookup_value is not None and not data:
+                    pass  # just reasserting the existing of this relationship (won't get deleted up there)
+                elif lookup_value is not None and data:
+                    rel_instance = self._get_object(rel_manager, lookup, lookup_value)
+                    for k, v in data.items():
+                        setattr(rel_instance, k, v)
+                        rel_instance.save()
+                elif data:
+                    rel_manager.create(**data)
                 else:
-                    instance.adjustments.create(**data)
+                    raise serializers.ValidationError({field: "data is empty"})
 
         return instance
 
