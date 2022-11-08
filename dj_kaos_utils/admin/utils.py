@@ -1,5 +1,6 @@
 import json
 
+from django.urls import reverse, NoReverseMatch
 from django.utils.html import format_html_join, format_html
 from django.utils.safestring import mark_safe
 from pygments import highlight
@@ -86,3 +87,27 @@ def render_anchor(href: str, children=None, new_tab=True, attrs=None):
         _attrs['target'] = '_blank'
         _attrs['rel'] = 'noreferrer'
     return render_element('a', children, attrs=_attrs | attrs)
+
+
+def get_admin_link(obj):
+    opts = obj._meta
+    try:
+        return reverse(f'admin:{opts.app_label}_{opts.model_name}_change', args=(obj.id,))
+    except NoReverseMatch:
+        return None
+
+
+def render_admin_link(obj, **kwargs):
+    admin_link = get_admin_link(obj)
+    if admin_link:
+        return render_anchor(admin_link, str(obj), **kwargs)
+
+
+__all__ = (
+    'pp_json',
+    'render_element',
+    'render_img',
+    'render_anchor',
+    'get_admin_link',
+    'render_admin_link',
+)
