@@ -91,6 +91,15 @@ class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
             related_fields[field] = lookup
         return related_fields
 
+    @staticmethod
+    def _get_object(qs, lookup_field, lookup_value):
+        try:
+            return qs.get(**{lookup_field: lookup_value})
+        except qs.model.DoesNotExist:
+            raise serializers.ValidationError({
+                lookup_field: f"{qs.model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+            })
+
     def create(self, validated_data):
         rel_data_dict = {}
         for field in self.related_fields:
@@ -112,16 +121,25 @@ class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         for field, data_list in rel_data_dict.items():
+            rel_manager = getattr(instance, field)
             lookup = self.related_fields[field]
-            getattr(instance, field).exclude(
+            rel_manager.exclude(
                 **{f'{lookup}__in': get_lookup_values(data_list, lookup)}
             ).delete()
 
             for data in data_list:
-                if lookup_value := data.pop(lookup, None):
-                    instance.adjustments.update_or_create(**{lookup: lookup_value}, defaults=data)
+                lookup_value = data.pop(lookup, None)
+                if lookup_value is not None and not data:
+                    pass  # just reasserting the existing of this relationship (won't get deleted up there)
+                elif lookup_value is not None and data:
+                    rel_instance = self._get_object(rel_manager, lookup, lookup_value)
+                    for k, v in data.items():
+                        setattr(rel_instance, k, v)
+                        rel_instance.save()
+                elif data:
+                    rel_manager.create(**data)
                 else:
-                    instance.adjustments.create(**data)
+                    raise serializers.ValidationError({field: "data is empty"})
 
         return instance
 
