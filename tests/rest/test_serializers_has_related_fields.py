@@ -40,6 +40,17 @@ def category_1(category_1_data):
 
 
 @pytest.fixture
+def create_category():
+
+    def _create_category(products=None):
+        category = Category.objects.create(name="Category")
+        if products:
+            category.products.set(products)
+        return category
+
+    return _create_category
+
+@pytest.fixture
 def create_product(create_category):
     return Product.objects.create(
         name="Product 1",
@@ -123,3 +134,14 @@ def test_serializer_update_replace_obj(db, category_1_data, category_1,
     assert created_category.products.count() == 1
     created_product_1 = created_category.products.get(
         name=product_2_data['name'])
+
+
+def test_serializer_update_update_obj(db, create_category, product_1):
+    category = create_category(products=[product_1])
+    data = CategorySerializer(category).data
+    data['products'][0]['name'] = 'Updated Product'
+    serializer = CategorySerializer(data=data)
+    assert serializer.is_valid()
+    updated_category = serializer.save()
+    assert updated_category.products.count() == 1
+    created_product_1 = updated_category.products.get(name='Updated Product')
