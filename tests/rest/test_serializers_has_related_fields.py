@@ -30,60 +30,27 @@ class CategorySerializer(HasRelatedFieldsModelSerializer,
 
 
 @pytest.fixture
-def category_1_data():
-    return dict(name="Category 1")
-
-
-@pytest.fixture
-def category_1(category_1_data):
-    return Category.objects.create(**category_1_data)
-
-
-@pytest.fixture
 def create_category():
 
     def _create_category(products=None):
         category = Category.objects.create(name="Category")
         if products:
             category.products.set(products)
-        return category
+        return CategorySerializer(category).data
 
     return _create_category
 
+
 @pytest.fixture
-def create_product(create_category):
+def product():
     return Product.objects.create(
-        name="Product 1",
-        price="1.00",
-        code_id='code_id_1',
-        category=create_category,
-    )
-
-
-@pytest.fixture
-def product_1_data():
-    return dict(
         name="Product 1",
         price='1.00',
         code_id='code_id_1',
     )
 
 
-@pytest.fixture
-def product_2_data():
-    return dict(
-        name="Product 2",
-        price='2.00',
-        code_id='code_id_2',
-    )
-
-
-@pytest.fixture
-def product_1(product_1_data):
-    return Product.objects.create(**product_1_data)
-
-
-def test_serializer_create(db):
+def test_serializer_create_single(db):
     product_1 = dict(
         name="Created Product",
         price='1.00',
@@ -98,7 +65,8 @@ def test_serializer_create(db):
     assert created_category.products.count() == 1
 
 
-def test_serializer_create_multiple(db):
+def test_serializer_create_multiple(db, create_category):
+    data = create_category()
     product_1 = dict(
         name="Product 1",
         price='1.00',
@@ -109,39 +77,46 @@ def test_serializer_create_multiple(db):
         price='2.00',
         code_id='code_id_2',
     )
-    products = [product_1, product_2]
-    category_data = dict(name="Category 1", products=products)
+    data['products'] = [product_1, product_2]
 
-    serializer = CategorySerializer(data=category_data)
+    serializer = CategorySerializer(data=data)
     assert serializer.is_valid()
+
     created_category = serializer.save()
     assert created_category.products.count() == 2
-    created_product_1 = created_category.products.get(name=product_1['name'])
-    created_product_2 = created_category.products.get(name=product_2['name'])
+    created_category.products.get(name=product_1['name'])
+    created_category.products.get(name=product_2['name'])
 
 
-def test_serializer_update_replace_obj(db, category_1_data, category_1,
-                                       product_1, product_2_data):
-    category_1.products.set([product_1])
-    data = dict(
-        products=[product_2_data],
-        name=category_1.name,
-        id=category_1.id,
+def test_serializer_update_replace_obj(
+    db,
+    create_category,
+    product,
+):
+    data = create_category(products=[product])
+    new_product = dict(
+        name="New Product",
+        price='2.00',
+        code_id='code_id_2',
     )
+
+    data['products'] = [new_product]
+
     serializer = CategorySerializer(data=data)
     assert serializer.is_valid()
-    created_category = serializer.save()
-    assert created_category.products.count() == 1
-    created_product_1 = created_category.products.get(
-        name=product_2_data['name'])
+
+    updated_category = serializer.save()
+    assert updated_category.products.count() == 1
+    updated_category.products.get(name=new_product['name'])
 
 
-def test_serializer_update_update_obj(db, create_category, product_1):
-    category = create_category(products=[product_1])
-    data = CategorySerializer(category).data
+def test_serializer_update_update_obj(db, create_category, product):
+    data = create_category(products=[product])
     data['products'][0]['name'] = 'Updated Product'
+
     serializer = CategorySerializer(data=data)
     assert serializer.is_valid()
+
     updated_category = serializer.save()
     assert updated_category.products.count() == 1
     created_product_1 = updated_category.products.get(name='Updated Product')
