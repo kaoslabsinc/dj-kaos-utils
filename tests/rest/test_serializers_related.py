@@ -85,14 +85,11 @@ def _test_get_raise_exception(product, nested_writable):
         _test_get(product, nested_writable, raise_exception=True)
 
 
-def _test_create_update_get(product, nested_writable, create, update, get):
-    _test_create(nested_writable) if create else _test_create_raise_exception(
-        nested_writable)
-    _test_update(product,
-                 nested_writable) if update else _test_update_raise_exception(
-                     product, nested_writable)
-    _test_get(product, nested_writable) if get else _test_get_raise_exception(
-        product, nested_writable)
+def _test_create_update_get(product, nw, create, update, get):
+    args = [product, nw]
+    _test_create(nw) if create else _test_create_raise_exception(nw)
+    _test_update(*args) if update else _test_update_raise_exception(*args)
+    _test_get(*args) if get else _test_get_raise_exception(*args)
 
 
 def test_serializer_empty(db):
