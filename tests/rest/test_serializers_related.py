@@ -1,9 +1,9 @@
 import pytest
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
-from simple.models import Product
 
 from dj_kaos_utils.rest.serializers import make_nested_writable
+from simple.models import Product
 
 empty = dict(can_create=False, can_update=False, can_get=False)
 get = dict(can_create=False, can_update=False, can_get=True)
@@ -16,7 +16,6 @@ create_update_get = dict(can_create=True, can_update=True, can_get=True)
 
 
 class ProductModelSerializer(ModelSerializer):
-
     class Meta:
         model = Product
         fields = (
@@ -93,8 +92,8 @@ def _test_create_update_get(product, nw, create, update, get):
 
 
 def test_serializer_empty(db):
-    nested_writable = make_nested_writable(ProductModelSerializer, **empty)
-    # TODO https://github.com/kaoslabsinc/dj-kaos-utils/issues/6
+    with pytest.raises(AssertionError):
+        make_nested_writable(ProductModelSerializer, **empty)()
 
 
 def test_serializer_create(db, product):
