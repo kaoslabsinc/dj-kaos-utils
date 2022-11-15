@@ -19,6 +19,8 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         self.can_get = kwargs.pop('can_get', self.can_get)
         self.can_create = kwargs.pop('can_create', self.can_create)
         self.can_update = kwargs.pop('can_update', self.can_update)
+        assert self.can_get or self.can_create or self.can_update, \
+            "At least one of can_get, can_create or can_update should be set."
         super().__init__(*args, **kwargs)
 
     @staticmethod
