@@ -5,6 +5,8 @@ from rest_framework.settings import api_settings
 
 from .utils import get_lookup_values
 
+NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
+
 
 class RelatedModelSerializer(serializers.ModelSerializer):
     lookup_field = None
@@ -37,48 +39,45 @@ class RelatedModelSerializer(serializers.ModelSerializer):
         lookup_value = data.pop(lookup_field, None)
         model = self.Meta.model
 
-        if lookup_value is not None and not data:  # e.g. { uuid: "xxxxxxxx-xxxx-..." }
-            if self.can_get:
-                return self._get_object(model, lookup_field, lookup_value)
-            else:
-                raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to get existing objects"
-                })
-        elif lookup_value is not None and data:  # e.g. { uuid: "xxxxxxxx-xxxx-...", name : "Name" }
-            if self.can_update:
-                instance = self._get_object(model, lookup_field, lookup_value)
-                return self.update(instance, data)
-            else:
-                raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
-                })
-        elif lookup_value is None and data:  # e.g. { name : "Name" }
+        if lookup_value is not None:
+            if data:  # { uuid: "xxxxxxxx-xxxx-...", name : "Name" }, update
+                if self.can_update:
+                    instance = self._get_object(model, lookup_field, lookup_value)
+                    return self.update(instance, data)
+                else:
+                    raise serializers.ValidationError({
+                        NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
+                    })
+            else:  # e.g. { uuid: "xxxxxxxx-xxxx-..." }, get
+                if self.can_get:
+                    return self._get_object(model, lookup_field, lookup_value)
+                else:
+                    raise serializers.ValidationError({
+                        NON_FIELD_ERRORS_KEY: "This api is not configured to get existing objects"
+                    })
+        else:  # e.g. { name : "Name" } or {} aka just a prompt to create the default object of this type
             if self.can_create:
                 return self.create(data)
             else:
                 raise serializers.ValidationError({
-                    api_settings.NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
+                    NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
                 })
-        else:
-            raise serializers.ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: "data is empty"
-            })
 
 
 def make_nested_writable(
     serializer_cls: Type[serializers.ModelSerializer],
     lookup_field=RelatedModelSerializer.lookup_field,
-    can_get=RelatedModelSerializer.can_get,
-    can_create=RelatedModelSerializer.can_create,
-    can_update=RelatedModelSerializer.can_update
+    get=RelatedModelSerializer.can_get,
+    create=RelatedModelSerializer.can_create,
+    update=RelatedModelSerializer.can_update
 ):
     class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
         pass
 
     WritableNestedXXX.lookup_field = lookup_field
-    WritableNestedXXX.can_get = can_get
-    WritableNestedXXX.can_create = can_create
-    WritableNestedXXX.can_update = can_update
+    WritableNestedXXX.can_get = get
+    WritableNestedXXX.can_create = create
+    WritableNestedXXX.can_update = update
     WritableNestedXXX.__name__ = WritableNestedXXX.__name__.replace('XXX', serializer_cls.__name__)
 
     return WritableNestedXXX
@@ -139,17 +138,17 @@ class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
 
             for data in data_list:
                 lookup_value = data.pop(lookup, None)
-                if lookup_value is not None and not data:
-                    pass  # just reasserting the existing of this relationship (won't get deleted up there)
-                elif lookup_value is not None and data:
+                if lookup_value is not None:
                     rel_instance = self._get_object(rel_manager, lookup, lookup_value)
-                    for k, v in data.items():
-                        setattr(rel_instance, k, v)
-                        rel_instance.save()
-                elif data:
-                    rel_manager.create(**data)
+                    if data:
+                        for k, v in data.items():
+                            setattr(rel_instance, k, v)
+                            rel_instance.save()
+                    else:
+                        pass  # just reasserting the existing of this relationship (won't get deleted up there) TODO
+                        # What if we want to add an existing object to the relationship? can we do that?
                 else:
-                    raise serializers.ValidationError({field: "data is empty"})
+                    rel_manager.create(**data)
 
         return instance
 
