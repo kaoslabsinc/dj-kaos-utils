@@ -65,17 +65,17 @@ class RelatedModelSerializer(serializers.ModelSerializer):
 def make_nested_writable(
     serializer_cls: Type[serializers.ModelSerializer],
     lookup_field=RelatedModelSerializer.lookup_field,
-    can_get=RelatedModelSerializer.can_get,
-    can_create=RelatedModelSerializer.can_create,
-    can_update=RelatedModelSerializer.can_update
+    get=RelatedModelSerializer.can_get,
+    create=RelatedModelSerializer.can_create,
+    update=RelatedModelSerializer.can_update
 ):
     class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
         pass
 
     WritableNestedXXX.lookup_field = lookup_field
-    WritableNestedXXX.can_get = can_get
-    WritableNestedXXX.can_create = can_create
-    WritableNestedXXX.can_update = can_update
+    WritableNestedXXX.can_get = get
+    WritableNestedXXX.can_create = create
+    WritableNestedXXX.can_update = update
     WritableNestedXXX.__name__ = WritableNestedXXX.__name__.replace('XXX', serializer_cls.__name__)
 
     return WritableNestedXXX
