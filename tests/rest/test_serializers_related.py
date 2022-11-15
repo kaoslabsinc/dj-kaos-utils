@@ -5,14 +5,14 @@ from rest_framework.serializers import ModelSerializer
 from dj_kaos_utils.rest.serializers import make_nested_writable
 from simple.models import Product
 
-empty_kwargs = dict(can_create=False, can_update=False, can_get=False)
-get_kwargs = dict(can_create=False, can_update=False, can_get=True)
-update_kwargs = dict(can_create=False, can_update=True, can_get=False)
-update_get_kwargs = dict(can_create=False, can_update=True, can_get=True)
-create_kwargs = dict(can_create=True, can_update=False, can_get=False)
-create_get_kwargs = dict(can_create=True, can_update=False, can_get=True)
-create_update_kwargs = dict(can_create=True, can_update=True, can_get=False)
-create_update_get_kwargs = dict(can_create=True, can_update=True, can_get=True)
+empty_kwargs = dict(create=False, update=False, get=False)
+get_kwargs = dict(create=False, update=False, get=True)
+update_kwargs = dict(create=False, update=True, get=False)
+update_get_kwargs = dict(create=False, update=True, get=True)
+create_kwargs = dict(create=True, update=False, get=False)
+create_get_kwargs = dict(create=True, update=False, get=True)
+create_update_kwargs = dict(create=True, update=True, get=False)
+create_update_get_kwargs = dict(create=True, update=True, get=True)
 
 
 class ProductModelSerializer(ModelSerializer):
