@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Type
+from typing import Mapping, Type
 
 from rest_framework import serializers
 from rest_framework.settings import api_settings
@@ -44,12 +44,12 @@ class WritableNestedSerializer(serializers.ModelSerializer):
         return self.update(instance, validated_data)
 
     def to_internal_value(self, data):
-        if isinstance(data, str):
-            # data is a lookup_value handle as SlugRelatedField
-            return self.get_object(data)
-        else:
+        if isinstance(data, Mapping):
             # data is a dict handle as ModelSerializer
             return super().to_internal_value(data)
+        else:
+            # data is a lookup_value handle as SlugRelatedField
+            return self.get_object(data)
 
     def save(self, **kwargs):
         # Disable modifying value of lookup_field on save of root object. lookup_field cannot be read-only as we need
