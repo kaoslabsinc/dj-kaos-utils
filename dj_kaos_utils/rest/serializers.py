@@ -1,160 +1,138 @@
+from collections import OrderedDict
 from typing import Type
 
 from rest_framework import serializers
 from rest_framework.settings import api_settings
 
-from .utils import get_lookup_values
 
 NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
 
 
-class RelatedModelSerializer(serializers.ModelSerializer):
-    lookup_field = None
-    can_get = True
-    can_create = False
-    can_update = False
+class WritableNestedSerializer(serializers.ModelSerializer):
+    """
+    WritableNestedSerializer functions as a ModelSerializer when serializing (retrieve and list) returning
+    nested models. When deserializing, acts as a SlugRelatedField if data is a string 
+    (example UUID value) otherwise behaves as a writable nested serializer.
+    """
 
     def __init__(self, *args, **kwargs):
-        self.lookup_field = kwargs.pop('lookup_field', self.lookup_field) or getattr(self.Meta, 'lookup_field', None)
-        self.can_get = kwargs.pop('can_get', self.can_get)
-        self.can_create = kwargs.pop('can_create', self.can_create)
-        self.can_update = kwargs.pop('can_update', self.can_update)
-        assert self.can_get or self.can_create or self.can_update, \
-            "At least one of can_get, can_create or can_update should be set."
+        self.lookup_field = kwargs.pop('lookup_field', 'uuid')
+        self.can_create = kwargs.pop('can_create', True)
+        self.can_update = kwargs.pop('can_update', True)
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def _get_object(model, lookup_field, lookup_value):
+    # Disable errors on nested writes. We know what we're doing!
+    serializers.raise_errors_on_nested_writes = lambda x, y, z: None
+
+    def get_object(self, lookup_value):
+        model = self.Meta.model
         try:
-            return model.objects.get(**{lookup_field: lookup_value})
+            return model.objects.get(**{self.lookup_field: lookup_value})
         except model.DoesNotExist:
             raise serializers.ValidationError({
-                lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+                self.lookup_field:
+                f"{model._meta.object_name} matching query {self.lookup_field}={lookup_value} does not exist."
             })
+
+    def get_and_update(self, validated_data):
+        # Note we assume the existance of the lookup_field. Calling functions should handle the KeyError Exception
+        lookup_value = validated_data[self.lookup_field]
+        instance = self.get_object(lookup_value)
+        return self.update(instance, validated_data)
 
     def to_internal_value(self, data):
-        lookup_field = self.lookup_field
-        assert lookup_field is not None, "You should specify lookup_field"
+        if isinstance(data, str):
+            # data is a lookup_value handle as SlugRelatedField
+            return self.get_object(data)
+        else:
+            # data is a dict handle as ModelSerializer
+            return super().to_internal_value(data)
 
-        lookup_value = data.pop(lookup_field, None)
-        model = self.Meta.model
+    def save(self, **kwargs):
+        # Disable modifying value of lookup_field on save of root object. lookup_field cannot be read-only as we need
+        # to allow setting on nested serializers.
+        self._validated_data.pop(self.lookup_field, None)
+        return self.save_nested_fields(self, self._validated_data)
 
-        if lookup_value is not None:
-            if data:  # { uuid: "xxxxxxxx-xxxx-...", name : "Name" }, update
-                if self.can_update:
-                    instance = self._get_object(model, lookup_field, lookup_value)
-                    return self.update(instance, data)
-                else:
-                    raise serializers.ValidationError({
-                        NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
-                    })
-            else:  # e.g. { uuid: "xxxxxxxx-xxxx-..." }, get
-                if self.can_get:
-                    return self._get_object(model, lookup_field, lookup_value)
-                else:
-                    raise serializers.ValidationError({
-                        NON_FIELD_ERRORS_KEY: "This api is not configured to get existing objects"
-                    })
-        else:  # e.g. { name : "Name" } or {} aka just a prompt to create the default object of this type
-            if self.can_create:
-                return self.create(data)
+    def save_nested_fields(self, field, validated_data, commit=True):
+        # Traverse validated_data searching for OrderedDict values and saving them to Django models.
+
+        m2m_fields = []
+        # Iterating over a copy of validated_data to be able to delete keys
+        for attr, val in validated_data.copy().items():
+            if isinstance(val, OrderedDict):
+                # Nested field.
+                validated_data[attr] = self.save_nested_fields(field.fields[attr], val)
+            elif isinstance(val, list):
+                # Reverse foreign key many=True. val is a list of related objects.
+                # .child accesses child serializer wrapped by ListSerializer
+                child = field.fields[attr].child
+                m2m_fields.append((child, attr, [child.save_nested_fields(child, v, commit=False) for v in val]))
+                # Remove key from validated_data. We will process the reverse m2m fields after saving 
+                del validated_data[attr]
+
+        if field == self:
+            # We are done. Return validated_data and allow call to super().save() on root object since
+            # handling of decision to save vs. update is differnet than for nested objects.
+            if commit:
+                self._validated_data = validated_data
+                instance = super().save()
             else:
-                raise serializers.ValidationError({
-                    NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
-                })
-
-
-def make_nested_writable(
-    serializer_cls: Type[serializers.ModelSerializer],
-    lookup_field=RelatedModelSerializer.lookup_field,
-    get=RelatedModelSerializer.can_get,
-    create=RelatedModelSerializer.can_create,
-    update=RelatedModelSerializer.can_update
-):
-    class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
-        pass
-
-    WritableNestedXXX.lookup_field = lookup_field
-    WritableNestedXXX.can_get = get
-    WritableNestedXXX.can_create = create
-    WritableNestedXXX.can_update = update
-    WritableNestedXXX.__name__ = WritableNestedXXX.__name__.replace('XXX', serializer_cls.__name__)
-
-    return WritableNestedXXX
-
-
-class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
-    default_related_lookup_field = 'uuid'
-
-    def __init__(self, *args, **kwargs):
-        self.related_fields = self._get_related_fields()
-        super().__init__(*args, **kwargs)
-
-    def _get_related_fields(self):
-        related_fields = {}
-        for item in self.Meta.related_fields:
-            if isinstance(item, tuple):
-                field, lookup = item
+                return validated_data
+        else:
+            if self.lookup_field in validated_data:
+                instance = field.get_and_update(validated_data)
             else:
-                field, lookup = item, self.default_related_lookup_field
-            related_fields[field] = lookup
-        return related_fields
+                instance = field.create(validated_data)
 
-    @staticmethod
-    def _get_object(qs, lookup_field, lookup_value):
-        try:
-            return qs.get(**{lookup_field: lookup_value})
-        except qs.model.DoesNotExist:
-            raise serializers.ValidationError({
-                lookup_field: f"{qs.model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
-            })
-
-    def create(self, validated_data):
-        rel_data_dict = {}
-        for field in self.related_fields:
-            rel_data_dict[field] = validated_data.pop(field)
-
-        instance = super().create(validated_data)
-
-        for field, data_list in rel_data_dict.items():
-            for data in data_list:
-                getattr(instance, field).create(**data)
+        # Handle m2m objects
+        # NOTE: Does not support removing any objects from the related object set. Objects in the
+        # list are only added or created in the related object set. Removing relationships requires
+        # allowing foreign key value to be null. To remove objects from the related object set
+        # either add the object to another related object set or the object itself should be deleted.
+        for field, attr, val in m2m_fields:
+            related_manager = getattr(instance, attr)
+            for obj in val:
+                # obj values are either OrderDict or Django models 
+                if isinstance(obj, OrderedDict):
+                    if self.lookup_field in obj:
+                        # Update existing object and add it to the related object set.
+                        updated_obj = field.get_and_update(obj)
+                        related_manager.add(updated_obj)
+                    else:
+                        # Create new object, save it and put it in the related object set.
+                        # Check can_create as related_manager.create() doesn't use field.create() method
+                        if field.can_create:
+                            related_manager.create(**obj)
+                        else:
+                            raise serializers.ValidationError({
+                                NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
+                            })
+                else:
+                    # Add an existing Django model to the related object set.
+                    related_manager.add(obj)
 
         return instance
 
     def update(self, instance, validated_data):
-        rel_data_dict = {}
-        for field in self.Meta.related_fields:
-            rel_data_dict[field] = validated_data.pop(field)
+        if self.can_update:
+            return super().update(instance, validated_data)
+        else:
+            raise serializers.ValidationError({
+                NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
+            })
 
-        instance = super().update(instance, validated_data)
+    def create(self, validated_data):
+        if self.can_create:
+            return super().create(validated_data)
+        else:
+            raise serializers.ValidationError({
+                NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
+            })
 
-        for field, data_list in rel_data_dict.items():
-            rel_manager = getattr(instance, field)
-            lookup = self.related_fields[field]
-            rel_manager.exclude(
-                **{f'{lookup}__in': get_lookup_values(data_list, lookup)}
-            ).delete()
+def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer]):
+    class WritableNestedXXX(WritableNestedSerializer, serializer_cls):
+        pass
+    WritableNestedXXX.__name__ = WritableNestedXXX.__name__.replace('XXX', serializer_cls.__name__)
 
-            for data in data_list:
-                lookup_value = data.pop(lookup, None)
-                if lookup_value is not None:
-                    rel_instance = self._get_object(rel_manager, lookup, lookup_value)
-                    if data:
-                        for k, v in data.items():
-                            setattr(rel_instance, k, v)
-                            rel_instance.save()
-                    else:
-                        pass  # just reasserting the existing of this relationship (won't get deleted up there) TODO
-                        # What if we want to add an existing object to the relationship? can we do that?
-                else:
-                    rel_manager.create(**data)
-
-        return instance
-
-
-__all__ = (
-    'RelatedModelSerializer',
-    'make_nested_writable',
-    'HasRelatedFieldsModelSerializer',
-)
+    return WritableNestedXXX
