@@ -121,9 +121,12 @@ def _test_create_update_get(product, nested_writable_kwargs, create, update,
     _test_get(*args) if get else _test_get_raise_exception(*args)
 
 
-def test_serializer_empty(db):
-    with pytest.raises(AssertionError):
-        make_nested_writable(**empty_kwargs)()
+def test_serializer_empty(db, product):
+    _test_create_update_get(product,
+                            empty_kwargs,
+                            create=False,
+                            update=False,
+                            get=False)
 
 
 def test_serializer_create(db, product):
