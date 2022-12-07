@@ -17,8 +17,11 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         self.lookup_field = kwargs.pop('lookup_field', 'uuid')
+        self.can_get = kwargs.pop('can_get', True)
         self.can_create = kwargs.pop('can_create', True)
         self.can_update = kwargs.pop('can_update', True)
+        assert self.can_get or self.can_create or self.can_update, \
+             "At least one of can_get, can_create or can_update should be set."
         super().__init__(*args, **kwargs)
 
     # Disable errors on nested writes. We know what we're doing!
