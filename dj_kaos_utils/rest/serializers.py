@@ -83,7 +83,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             else:
                 return validated_data
         else:
-            if self.lookup_field in validated_data:
+            if field.lookup_field in validated_data:
                 instance = field.get_and_update(validated_data)
             else:
                 instance = field.create(validated_data)
