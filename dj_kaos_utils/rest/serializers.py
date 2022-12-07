@@ -37,19 +37,18 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                 f"{model._meta.object_name} matching query {self.lookup_field}={lookup_value} does not exist."
             })
 
-    def get_and_update(self, validated_data):
-        # Note we assume the existance of the lookup_field. Calling functions should handle the KeyError Exception
-        lookup_value = validated_data[self.lookup_field]
-        instance = self.get_object(lookup_value)
-        return self.update(instance, validated_data)
-
     def to_internal_value(self, data):
         if isinstance(data, Mapping):
             # data is a dict handle as ModelSerializer
             return super().to_internal_value(data)
         else:
             # data is a lookup_value handle as SlugRelatedField
-            return self.get_object(data)
+            if self.can_get:
+                return self.get_object(data)
+            else:
+                raise serializers.ValidationError({
+                    NON_FIELD_ERRORS_KEY: "This api is not configured to get new objects"
+                })
 
     def save(self, **kwargs):
         # Disable modifying value of lookup_field on save of root object. lookup_field cannot be read-only as we need
@@ -84,7 +83,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                 return validated_data
         else:
             if field.lookup_field in validated_data:
-                instance = field.get_and_update(validated_data)
+                instance = field.update(validated_data)
             else:
                 instance = field.create(validated_data)
 
@@ -100,7 +99,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                 if isinstance(obj, OrderedDict):
                     if self.lookup_field in obj:
                         # Update existing object and add it to the related object set.
-                        updated_obj = field.get_and_update(obj)
+                        updated_obj = field.update(obj)
                         related_manager.add(updated_obj)
                     else:
                         # Create new object, save it and put it in the related object set.
@@ -117,8 +116,10 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def update(self, instance, validated_data):
+    def update(self, validated_data):
         if self.can_update:
+            lookup_value = validated_data[self.lookup_field]
+            instance = self.get_object(lookup_value)
             return super().update(instance, validated_data)
         else:
             raise serializers.ValidationError({
