@@ -46,28 +46,22 @@ def make_nested_writable(**kwargs):
 
 
 @pytest.fixture
-def category_data():
-    return {'id': 1, 'name': 'Category 1'}
+def category():
+    return Category.objects.create(
+        id=1,
+        name='Category 1'
+    )
 
 
 @pytest.fixture
-def category(category_data):
-    return Category.objects.create(**category_data)
-
-
-@pytest.fixture
-def product_data():
-    return {
-        'id': 1,
-        'name': "Product 1",
-        'price': "1.00",
-        'code_id': 'code_id_1',
-    }
-
-
-@pytest.fixture
-def product(category, product_data):
-    return Product.objects.create(category=category, **product_data)
+def product(category):
+    return Product.objects.create(
+        id=1,
+        category=category,
+        name="Product 1",
+        price="1.00",
+        code_id='code_id_1',        
+    )
 
 
 def _test_create(product, nested_writable_kwargs, raise_exception=False):
