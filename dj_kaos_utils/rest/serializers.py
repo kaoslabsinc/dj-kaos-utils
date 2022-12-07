@@ -20,7 +20,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
     serializers.raise_errors_on_nested_writes = lambda x, y, z: None
 
     def __init__(self, *args, **kwargs):
-        self.lookup_field = kwargs.pop('lookup_field', 'uuid')
+        self.lookup_field = self.Meta.lookup_field
         self.can_get = kwargs.pop('can_get', True)
         self.can_create = kwargs.pop('can_create', True)
         self.can_update = kwargs.pop('can_update', True)

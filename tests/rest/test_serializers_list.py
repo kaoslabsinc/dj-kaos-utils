@@ -17,10 +17,11 @@ class ProductSerializer(WritableNestedSerializer):
             'code_id',
             'category',
         )
+        lookup_field = 'id'
 
 class CategorySerializer(WritableNestedSerializer):
     id = serializers.IntegerField(required=False)
-    products = ProductSerializer(lookup_field='id', many=True)
+    products = ProductSerializer(many=True)
 
     class Meta:
         model = Category
@@ -31,6 +32,7 @@ class CategorySerializer(WritableNestedSerializer):
             'products',
         )
         read_only_fields = ('slug', )
+        lookup_field = 'id'
 
 
 @pytest.fixture

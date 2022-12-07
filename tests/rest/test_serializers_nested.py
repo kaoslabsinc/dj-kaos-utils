@@ -26,12 +26,13 @@ class CategorySerializer(WritableNestedSerializer):
             'slug',
         )
         read_only_fields = ('slug', )
+        lookup_field = 'id'
 
 
 def make_nested_writable(**kwargs):
 
     class ProductSerializer(WritableNestedSerializer):
-        category = CategorySerializer(lookup_field='id', **kwargs)
+        category = CategorySerializer(**kwargs)
 
         class Meta:
             model = Product
@@ -41,6 +42,7 @@ def make_nested_writable(**kwargs):
                 'code_id',
                 'category',
             )
+            lookup_field = 'id'
 
     return ProductSerializer
 
