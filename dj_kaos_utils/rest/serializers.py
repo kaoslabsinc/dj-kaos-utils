@@ -3,6 +3,7 @@ from typing import Mapping, Type
 
 from rest_framework import serializers
 from rest_framework.settings import api_settings
+import django.db.models
 
 
 NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
@@ -52,6 +53,10 @@ class WritableNestedSerializer(serializers.ModelSerializer):
         # on the self object ie (self.lookup_field, etc.) is almost certainly incorrect. Use the field object 
         # instead ie. field.lookup_field 
 
+        # If validated_data is already a Django a model we are done.
+        if isinstance(validated_data, django.db.models.Model):
+            return validated_data
+        
         m2m_fields = []
         # Iterating over a copy of validated_data to be able to delete keys
         for attr, val in validated_data.copy().items():
