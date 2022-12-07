@@ -87,7 +87,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             for obj in val:
                 # obj values are either OrderDict or Django models 
                 if isinstance(obj, OrderedDict):
-                    if self.lookup_field in obj:
+                    if field.lookup_field in obj:
                         # Update existing object and add it to the related object set.
                         updated_obj = field.update_object(obj)
                         related_manager.add(updated_obj)
