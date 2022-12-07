@@ -48,6 +48,9 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
     def save_nested_fields(self, field, validated_data, commit=True):
         # Traverse validated_data searching for OrderedDict values and saving them to Django models.
+        # IMPORTANT: self will always reference the root (top) object upon which save() was called. Calling any method
+        # on the self object ie (self.lookup_field, etc.) is almost certainly incorrect. Use the field object 
+        # instead ie. field.lookup_field 
 
         m2m_fields = []
         # Iterating over a copy of validated_data to be able to delete keys
