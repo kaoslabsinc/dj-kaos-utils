@@ -35,9 +35,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             if self.can_get:
                 return self.get_object(data)
             else:
-                raise serializers.ValidationError({
-                    NON_FIELD_ERRORS_KEY: "This api is not configured to get new objects"
-                })
+                self.raise_validation_error('get')
 
     def save(self, **kwargs):
         # Disable modifying value of lookup_field on save of root object. lookup_field cannot be read-only as we need
@@ -103,9 +101,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                         if field.can_create:
                             related_manager.create(**obj)
                         else:
-                            raise serializers.ValidationError({
-                                NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
-                            })
+                            field.raise_validation_error('create')
                 else:
                     # Add an existing Django model to the related object set.
                     related_manager.add(obj)
@@ -129,17 +125,19 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             instance = self.get_object(lookup_value)
             return self.update(instance, validated_data)
         else:
-            raise serializers.ValidationError({
-                NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
-            })
+            self.raise_validation_error('update')
 
     def create_object(self, validated_data):
         if self.can_create:
             return self.create(validated_data)
         else:
-            raise serializers.ValidationError({
-                NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
-            })
+            self.raise_validation_error('create')
+
+    def raise_validation_error(self, action):
+        raise serializers.ValidationError({
+            f"{self.__class__.__name__} is not configured to {action}"
+        })
+
 
 def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer]):
     class WritableNestedXXX(WritableNestedSerializer, serializer_cls):
