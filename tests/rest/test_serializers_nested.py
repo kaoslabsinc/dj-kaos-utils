@@ -1,19 +1,11 @@
-import pytest
-from rest_framework.exceptions import ValidationError
-from rest_framework import serializers
+from itertools import product
 
-from dj_kaos_utils.rest.serializers import WritableNestedSerializer
+import pytest
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from simple.models import Category, Product
 
-empty_kwargs = dict(can_create=False, can_update=False, can_get=False)
-get_kwargs = dict(can_create=False, can_update=False, can_get=True)
-update_kwargs = dict(can_create=False, can_update=True, can_get=False)
-update_get_kwargs = dict(can_create=False, can_update=True, can_get=True)
-create_kwargs = dict(can_create=True, can_update=False, can_get=False)
-create_get_kwargs = dict(can_create=True, can_update=False, can_get=True)
-create_update_kwargs = dict(can_create=True, can_update=True, can_get=False)
-create_update_get_kwargs = dict(can_create=True, can_update=True, can_get=True)
-
+from dj_kaos_utils.rest.serializers import WritableNestedSerializer
 
 class CategorySerializer(WritableNestedSerializer):
     id = serializers.IntegerField(required=False)
@@ -47,12 +39,24 @@ def make_nested_writable(**kwargs):
     return ProductSerializer
 
 
+# Test all combinations of can_get, can_update, can_create
+@pytest.fixture(scope="module",
+                params=product([False, True], [False, True], [False, True]))
+def product_serializer(request):
+    can_get, can_update, can_create = request.param
+    return make_nested_writable(can_get=can_get,
+                                can_update=can_update,
+                                can_create=can_create)
+
+
 @pytest.fixture
-def category():
-    return Category.objects.create(
-        id=1,
-        name='Category 1'
-    )
+def product_data(product_serializer, product):
+    return product_serializer(product).data
+
+
+@pytest.fixture
+def category(db):
+    return Category.objects.create(id=1, name='Category 1')
 
 
 @pytest.fixture
@@ -62,124 +66,43 @@ def product(category):
         category=category,
         name="Product 1",
         price="1.00",
-        code_id='code_id_1',        
+        code_id='code_id_1',
     )
 
 
-def _test_create(product, nested_writable_kwargs, raise_exception=False):
-    product_data = make_nested_writable(**nested_writable_kwargs)(product).data
+def test_create(product_serializer, product_data, product):
     product_data['category'] = {'name': 'Create Category'}
-    serializer = make_nested_writable(**nested_writable_kwargs)(
-        data=product_data)
-    assert serializer.is_valid(raise_exception=raise_exception)
-    product = serializer.save()
-    assert product.category.name == product_data['category']['name']
-
-
-def _test_update(product, nested_writable_kwargs, raise_exception=False):
-    product_data = make_nested_writable(**nested_writable_kwargs)(product).data
-    product_data['category'] = {'id': 1, 'name': 'Update Category'}
-    serializer = make_nested_writable(**nested_writable_kwargs)(
-        data=product_data)
-    assert serializer.is_valid(raise_exception=raise_exception)
-    product = serializer.save()
-    assert product.category.id == product_data['category']['id']
-    assert product.category.name == product_data['category']['name']
-
-
-def _test_get(product, nested_writable_kwargs, raise_exception=False):
-    product_data = make_nested_writable(**nested_writable_kwargs)(product).data
-    product_data['category'] = 1
-    serializer = make_nested_writable(**nested_writable_kwargs)(
-        data=product_data)
-    # assert serializer.is_valid(raise_exception=raise_exception)
+    serializer = product_serializer(instance=product, data=product_data)
     serializer.is_valid(raise_exception=True)
-    product = serializer.save()
-    assert product.category.id == product_data['category']
+    if serializer.fields['category'].can_create:
+        product = serializer.save()
+        assert product.category.name == product_data['category']['name']
+    else:
+        with pytest.raises(ValidationError):
+            serializer.save()
 
 
-def _test_create_raise_exception(_, nested_writable_kwargs):
-    with pytest.raises(ValidationError):
-        _test_create(_, nested_writable_kwargs, raise_exception=True)
+def test_update(product_serializer, product_data, product):
+    product_data['category'] = {'id': 1, 'name': 'Update Category'}
+    serializer = product_serializer(instance=product, data=product_data)
+    serializer.is_valid(raise_exception=True)
+    if serializer.fields['category'].can_update:
+        product = serializer.save()
+        assert product.category.id == product_data['category']['id']
+        assert product.category.name == product_data['category']['name']
+    else:
+        with pytest.raises(ValidationError):
+            serializer.save()
 
 
-def _test_update_raise_exception(product, nested_writable):
-    with pytest.raises(ValidationError):
-        _test_update(product, nested_writable, raise_exception=True)
-
-
-def _test_get_raise_exception(product, nested_writable):
-    with pytest.raises(ValidationError):
-        _test_get(product, nested_writable, raise_exception=True)
-
-
-def _test_create_update_get(product, nested_writable_kwargs, create, update,
-                            get):
-    args = [product, nested_writable_kwargs]
-    _test_create(*args) if create else _test_create_raise_exception(*args)
-    _test_update(*args) if update else _test_update_raise_exception(*args)
-    _test_get(*args) if get else _test_get_raise_exception(*args)
-
-
-def test_serializer_empty(db, product):
-    _test_create_update_get(product,
-                            empty_kwargs,
-                            create=False,
-                            update=False,
-                            get=False)
-
-
-def test_serializer_create(db, product):
-    _test_create_update_get(product,
-                            create_kwargs,
-                            create=True,
-                            update=False,
-                            get=False)
-
-
-def test_serializer_update(db, product):
-    _test_create_update_get(product,
-                            update_kwargs,
-                            create=False,
-                            update=True,
-                            get=False)
-
-
-def test_serializer_get(db, product):
-    _test_create_update_get(product,
-                            get_kwargs,
-                            create=False,
-                            update=False,
-                            get=True)
-
-
-def test_serializer_create_update(db, product):
-    _test_create_update_get(product,
-                            create_update_kwargs,
-                            create=True,
-                            update=True,
-                            get=False)
-
-
-def test_serializer_create_get(db, product):
-    _test_create_update_get(product,
-                            create_get_kwargs,
-                            create=True,
-                            update=False,
-                            get=True)
-
-
-def test_serializer_update_get(db, product):
-    _test_create_update_get(product,
-                            update_get_kwargs,
-                            create=False,
-                            update=True,
-                            get=True)
-
-
-def test_serializer_create_update_get(db, product):
-    _test_create_update_get(product,
-                            create_update_get_kwargs,
-                            create=True,
-                            update=True,
-                            get=True)
+def test_get(product_serializer, product_data, product):
+    product_data['category'] = 1
+    serializer = product_serializer(instance=product, data=product_data)
+    if serializer.fields['category'].can_get:
+        serializer.is_valid(raise_exception=True)
+        product = serializer.save()
+        assert product.category.id == product_data['category']
+    else:
+        with pytest.raises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
