@@ -22,8 +22,8 @@ class WritableNestedSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         self.lookup_field = kwargs.pop('lookup_field', self.Meta.lookup_field)
         self.can_get = kwargs.pop('can_get', True)
-        self.can_create = kwargs.pop('can_create', True)
-        self.can_update = kwargs.pop('can_update', True)
+        self.can_create = kwargs.pop('can_create', False)
+        self.can_update = kwargs.pop('can_update', False)
         super().__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
