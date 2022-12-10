@@ -30,3 +30,15 @@ class Product(models.Model):
     code_id = LowerCaseCharField(max_length=255)
 
     objects = ProductQuerySet.as_manager()
+
+
+class Product2(models.Model):
+    category = models.ForeignKey(Category,
+                                 on_delete=models.CASCADE,
+                                 related_name='products2')
+    name = models.CharField(max_length=255)
+    price = MoneyField()
+
+    code_id = LowerCaseCharField(max_length=255)
+
+    objects = ProductQuerySet.as_manager()

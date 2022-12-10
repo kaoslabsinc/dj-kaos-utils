@@ -5,14 +5,14 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from dj_kaos_utils.rest.serializers import WritableNestedSerializer
-from simple.models import Category, Product
+from simple.models import Category, Product2
 
 
 class ProductSerializer(WritableNestedSerializer):
     id = serializers.IntegerField(required=False)
 
     class Meta:
-        model = Product
+        model = Product2
         fields = (
             'id',
             'name',
@@ -26,7 +26,7 @@ class ProductSerializer(WritableNestedSerializer):
 def make_nested_writable(**kwargs):
     class CategorySerializer(WritableNestedSerializer):
         id = serializers.IntegerField(required=False)
-        products = ProductSerializer(many=True, **kwargs)
+        products2 = ProductSerializer(many=True, **kwargs)
 
         class Meta:
             model = Category
@@ -34,7 +34,7 @@ def make_nested_writable(**kwargs):
                 'id',
                 'name',
                 'slug',
-                'products',
+                'products2',
             )
             read_only_fields = ('slug',)
             lookup_field = 'id'
@@ -66,7 +66,7 @@ def category(product):
 
 @pytest.fixture
 def product(db):
-    return Product.objects.create(
+    return Product2.objects.create(
         id=1,
         name="Product 1",
         price="1.00",
@@ -108,7 +108,7 @@ def test_serializer_update(category_serializer, category, category_data):
 
 
 def test_serializer_get(category_serializer, category, category_data):
-    new_product = Product.objects.create(
+    new_product = Product2.objects.create(
         id=2,
         name="Product 2",
         price="2.00",
