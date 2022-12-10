@@ -3,9 +3,10 @@ from itertools import product
 import pytest
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from simple.models import Category, Product
 
 from dj_kaos_utils.rest.serializers import WritableNestedSerializer
+from simple.models import Category, Product
+
 
 class CategorySerializer(WritableNestedSerializer):
     id = serializers.IntegerField(required=False)
@@ -17,12 +18,11 @@ class CategorySerializer(WritableNestedSerializer):
             'name',
             'slug',
         )
-        read_only_fields = ('slug', )
+        read_only_fields = ('slug',)
         lookup_field = 'id'
 
 
 def make_nested_writable(**kwargs):
-
     class ProductSerializer(WritableNestedSerializer):
         category = CategorySerializer(**kwargs)
 
