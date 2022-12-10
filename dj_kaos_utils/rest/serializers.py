@@ -1,4 +1,4 @@
-from typing import Mapping, Type
+from typing import Type, MutableMapping
 
 from rest_framework import serializers
 from rest_framework.settings import api_settings
@@ -163,7 +163,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
-        if isinstance(data, Mapping):
+        if isinstance(data, MutableMapping):
             # data is a dict handle as ModelSerializer
             return super().to_internal_value(data)
         else:
@@ -200,34 +200,36 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             NON_FIELD_ERRORS_KEY: f"{self.__class__.__name__} is not configured to {action}"
         })
 
+    def save_nested_data(self, nested_data):
+        if isinstance(nested_data, models.Model):
+            return nested_data
+        elif isinstance(nested_data, MutableMapping):
+            if self.lookup_field in nested_data:
+                if self.can_update:
+                    nested_lookup_value = nested_data[self.lookup_field]
+                    nested_instance = self.get_object(nested_lookup_value)
+                    return self.update(nested_instance, nested_data)
+                else:
+                    self._raise_action_validation_error('update')
+            else:
+                if self.can_create:
+                    return self.create(nested_data)
+                else:
+                    self._raise_action_validation_error('create')
+        else:
+            # data is a lookup_value handle as SlugRelatedField
+            lookup_value = nested_data
+            if self.can_get:
+                return self.get_object(lookup_value)
+            else:
+                self._raise_action_validation_error('get')
+
     def save_nested_fields(self, validated_data):
         nested_fields = self.pop_nested_fields(validated_data)
-
         for field_name, nested_data in nested_fields.items():
             nested_serializer: WritableNestedSerializer = self.fields[field_name]
+            validated_data[field_name] = nested_serializer.save_nested_data(nested_data)
 
-            if isinstance(nested_data, models.Model):
-                validated_data[field_name] = nested_data
-            elif isinstance(nested_data, Mapping):
-                if nested_serializer.lookup_field in nested_data:
-                    if nested_serializer.can_update:
-                        nested_lookup_value = nested_data[nested_serializer.lookup_field]
-                        nested_instance = nested_serializer.get_object(nested_lookup_value)
-                        validated_data[field_name] = nested_serializer.update(nested_instance, nested_data)
-                    else:
-                        self._raise_action_validation_error('update')
-                else:
-                    if nested_serializer.can_create:
-                        validated_data[field_name] = nested_serializer.create(nested_data)
-                    else:
-                        self._raise_action_validation_error('create')
-            else:
-                # data is a lookup_value handle as SlugRelatedField
-                lookup_value = nested_data
-                if self.can_get:
-                    validated_data[field_name] = nested_serializer.get_object(lookup_value)
-                else:
-                    self._raise_action_validation_error('get')
 
     def create(self, validated_data):
         self.save_nested_fields(validated_data)
