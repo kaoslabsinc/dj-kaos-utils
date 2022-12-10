@@ -224,17 +224,16 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             else:
                 self._raise_action_validation_error('get')
 
-    def save_nested_fields(self, validated_data):
+    def process_nested_fields(self, validated_data):
         nested_fields = self.pop_nested_fields(validated_data)
         for field_name, nested_data in nested_fields.items():
             nested_serializer: WritableNestedSerializer = self.fields[field_name]
             validated_data[field_name] = nested_serializer.save_nested_data(nested_data)
 
-
     def create(self, validated_data):
-        self.save_nested_fields(validated_data)
+        self.process_nested_fields(validated_data)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        self.save_nested_fields(validated_data)
+        self.process_nested_fields(validated_data)
         return super().update(instance, validated_data)
