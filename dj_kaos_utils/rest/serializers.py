@@ -1,4 +1,4 @@
-from typing import Type, MutableMapping
+from typing import Type, Mapping
 
 from django.db import models
 from rest_framework import serializers
@@ -26,7 +26,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
-        if isinstance(data, MutableMapping):
+        if isinstance(data, Mapping):
             # data is a dict handle as ModelSerializer
             return super().to_internal_value(data)
         else:
@@ -78,33 +78,26 @@ class WritableNestedSerializer(serializers.ModelSerializer):
     def save_nested_data(self, nested_data, related_manager=None):
         if isinstance(nested_data, models.Model):
             return nested_data
-        elif isinstance(nested_data, MutableMapping):
-            if self.lookup_field in nested_data:
-                if self.can_update:
-                    nested_lookup_value = nested_data[self.lookup_field]
-                    nested_instance = self.get_object(nested_lookup_value)
-                    return self.update(nested_instance, nested_data)
-                else:
-                    self._raise_action_validation_error('update')
+
+        if self.lookup_field in nested_data:
+            if self.can_update:
+                nested_lookup_value = nested_data[self.lookup_field]
+                nested_instance = self.get_object(nested_lookup_value)
+                return self.update(nested_instance, nested_data)
             else:
-                if self.can_create:
-                    if not related_manager:
-                        return self.create(nested_data)
-                    else:
-                        nested_list_fields = self.pop_list_fields(nested_data)
-                        self.process_nested_fields(nested_data)
-                        nested_instance = related_manager.create(**nested_data)
-                        self.process_list_fields(nested_instance, nested_list_fields)
-                        return nested_instance
-                else:
-                    self._raise_action_validation_error('create')
+                self._raise_action_validation_error('update')
         else:
-            # data is a lookup_value handle as SlugRelatedField
-            lookup_value = nested_data
-            if self.can_get:
-                return self.get_object(lookup_value)
+            if self.can_create:
+                if not related_manager:
+                    return self.create(nested_data)
+                else:
+                    nested_list_fields = self.pop_list_fields(nested_data)
+                    self.process_nested_fields(nested_data)
+                    nested_instance = related_manager.create(**nested_data)
+                    self.process_list_fields(nested_instance, nested_list_fields)
+                    return nested_instance
             else:
-                self._raise_action_validation_error('get')
+                self._raise_action_validation_error('create')
 
     def process_nested_fields(self, validated_data):
         nested_fields = self.pop_nested_fields(validated_data)
