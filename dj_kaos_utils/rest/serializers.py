@@ -1,6 +1,7 @@
 from typing import Type, MutableMapping
 
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer
 from rest_framework.settings import api_settings
 
 NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
@@ -185,6 +186,18 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                     nested_fields[field_name] = validated_data.pop(field_name)
         return nested_fields
 
+    def pop_list_fields(self, validated_data):
+        """
+        Returns a dictionary of ;ost fields and their data from the validated_data dictionary.
+        The data for each nested field is removed from the validated_data dictionary.
+        """
+        nested_fields = {}
+        for field_name, field in self.fields.items():
+            if isinstance(field, ListSerializer) and isinstance(field.child, WritableNestedSerializer):
+                if validated_data.get(field_name) is not None:
+                    nested_fields[field_name] = validated_data.pop(field_name)
+        return nested_fields
+
     def get_object(self, lookup_value):
         model = self.Meta.model
         try:
@@ -200,7 +213,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             NON_FIELD_ERRORS_KEY: f"{self.__class__.__name__} is not configured to {action}"
         })
 
-    def save_nested_data(self, nested_data):
+    def save_nested_data(self, nested_data, related_manager=None):
         if isinstance(nested_data, models.Model):
             return nested_data
         elif isinstance(nested_data, MutableMapping):
@@ -213,7 +226,14 @@ class WritableNestedSerializer(serializers.ModelSerializer):
                     self._raise_action_validation_error('update')
             else:
                 if self.can_create:
-                    return self.create(nested_data)
+                    if not related_manager:
+                        return self.create(nested_data)
+                    else:
+                        nested_list_fields = self.pop_list_fields(nested_data)
+                        self.process_nested_fields(nested_data)
+                        nested_instance = related_manager.create(**nested_data)
+                        self.process_list_fields(nested_instance, nested_list_fields)
+                        return nested_instance
                 else:
                     self._raise_action_validation_error('create')
         else:
@@ -230,10 +250,24 @@ class WritableNestedSerializer(serializers.ModelSerializer):
             nested_serializer: WritableNestedSerializer = self.fields[field_name]
             validated_data[field_name] = nested_serializer.save_nested_data(nested_data)
 
+    def process_list_fields(self, instance, list_fields):
+        for field_name, list_data in list_fields.items():
+            list_serializer: ListSerializer = self.fields[field_name]
+            nested_serializer: WritableNestedSerializer = self.fields[field_name].child
+            related_manager = getattr(instance, list_serializer.source)
+            for nested_data in list_data:
+                related_manager.add(nested_serializer.save_nested_data(nested_data, related_manager))
+
     def create(self, validated_data):
+        list_fields = self.pop_list_fields(validated_data)
         self.process_nested_fields(validated_data)
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        self.process_list_fields(instance, list_fields)
+        return instance
 
     def update(self, instance, validated_data):
+        list_fields = self.pop_list_fields(validated_data)
         self.process_nested_fields(validated_data)
-        return super().update(instance, validated_data)
+        instance = super().update(instance, validated_data)
+        self.process_list_fields(instance, list_fields)
+        return instance

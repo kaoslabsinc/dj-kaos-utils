@@ -23,10 +23,17 @@ class ProductSerializer(WritableNestedSerializer):
         lookup_field = 'id'
 
 
+class NestedProductSerializer(ProductSerializer):
+    id = serializers.IntegerField(required=False)
+
+    class Meta(ProductSerializer.Meta):
+        extra_kwargs = {'category': {'required': False}}
+
+
 def make_nested_writable(**kwargs):
     class CategorySerializer(WritableNestedSerializer):
         id = serializers.IntegerField(required=False)
-        products2 = ProductSerializer(many=True, **kwargs)
+        products2 = NestedProductSerializer(many=True, **kwargs)
 
         class Meta:
             model = Category
@@ -55,23 +62,28 @@ def category_data(category_serializer, category):
 
 
 @pytest.fixture
-def category(product):
+def category(db):
     category = Category.objects.create(
         id=1,
         name='Category 1'
     )
-    category.products.add(product)
     return category
 
 
 @pytest.fixture
-def product(db):
+def product(category):
     return Product2.objects.create(
         id=1,
         name="Product 1",
         price="1.00",
         code_id='code_id_1',
+        category=category,
     )
+
+
+@pytest.fixture
+def category_data(category, product, category_serializer):
+    return category_serializer(category).data
 
 
 def test_serializer_create(category_serializer, category, category_data):
@@ -80,28 +92,28 @@ def test_serializer_create(category_serializer, category, category_data):
         'price': '1.00',
         'code_id': 'code_id',
     }
-    category_data['products'] = [create_product]
+    category_data['products2'] = [create_product]
 
     serializer = category_serializer(instance=category, data=category_data)
     serializer.is_valid(raise_exception=True)
-    if serializer.fields['products'].child.can_create:
+    if serializer.fields['products2'].child.can_create:
         category = serializer.save()
-        assert category.products.count() == 2
-        category.products.get(name=create_product['name'])
+        assert category.products2.count() == 2
+        category.products2.get(name=create_product['name'])
     else:
         with pytest.raises(ValidationError):
             serializer.save()
 
 
 def test_serializer_update(category_serializer, category, category_data):
-    category_data['products'][0]['name'] = "Updated Product"
+    category_data['products2'][0]['name'] = "Updated Product"
 
     serializer = category_serializer(instance=category, data=category_data)
     serializer.is_valid(raise_exception=True)
-    if serializer.fields['products'].child.can_update:
+    if serializer.fields['products2'].child.can_update:
         category = serializer.save()
-        assert category.products.count() == 1
-        category.products.get(name=category_data['products'][0]['name'])
+        assert category.products2.count() == 1
+        category.products2.get(name=category_data['products2'][0]['name'])
     else:
         with pytest.raises(ValidationError):
             serializer.save()
@@ -113,15 +125,18 @@ def test_serializer_get(category_serializer, category, category_data):
         name="Product 2",
         price="2.00",
         code_id='code_id_2',
+        category=Category.objects.create(
+            name='Category 5'
+        ),
     )
-    category_data['products'] = [new_product.id]
+    category_data['products2'] = [new_product.id]
 
     serializer = category_serializer(instance=category, data=category_data)
-    if serializer.fields['products'].child.can_get:
+    if serializer.fields['products2'].child.can_get:
         serializer.is_valid(raise_exception=True)
         category = serializer.save()
-        assert category.products.count() == 2
-        category.products.get(id=new_product.id)
+        assert category.products2.count() == 2
+        category.products2.get(id=new_product.id)
     else:
         with pytest.raises(ValidationError):
             serializer.is_valid(raise_exception=True)
