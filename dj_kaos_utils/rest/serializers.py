@@ -9,6 +9,13 @@ NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
 
 
 class WritableNestedSerializer(serializers.ModelSerializer):
+    """
+    WritableNestedSerializer functions as a ModelSerializer when serializing (retrieve and list) returning
+    nested models. When deserializing, acts as a SlugRelatedField if data is a string
+    (example UUID value) otherwise behaves as a writable nested serializer.
+    """
+
+    # Disable errors on nested writes. We know what we're doing!
     serializers.raise_errors_on_nested_writes = lambda x, y, z: None
 
     def __init__(self, *args, **kwargs):
