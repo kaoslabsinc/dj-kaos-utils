@@ -8,11 +8,11 @@ class BooleanAdminFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            (True, "True"),
+            ('on', "On"),
         )
 
     def queryset(self, request, queryset):
-        if self.value():
+        if self.value() == 'on':
             return self.filter(request, queryset)
         return queryset
 
@@ -47,7 +47,47 @@ class QuerysetChoiceFilter(admin.SimpleListFilter):
         return queryset
 
 
+class YesNoAdminFilter(admin.SimpleListFilter):
+    """
+    An admin filter that works like an on-off switch.
+    """
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', "Yes"),
+            ('no', "No"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return self.filter_yes(request, queryset)
+        if self.value() == 'no':
+            return self.filter_no(request, queryset)
+        return queryset
+
+    def filter_yes(self, request, queryset):
+        """
+        Override this method to filter the queryset when the filter value is set to yes
+
+        :param request: the request from the admin site
+        :param queryset: the queryset passed by the admin
+        :return: filtered queryset
+        """
+        raise NotImplementedError
+
+    def filter_no(self, request, queryset):
+        """
+        Override this method to filter the queryset when the filter value is set to no
+
+        :param request: the request from the admin site
+        :param queryset: the queryset passed by the admin
+        :return: filtered queryset
+        """
+        raise NotImplementedError
+
+
 __all__ = (
     'BooleanAdminFilter',
     'QuerysetChoiceFilter',
+    'YesNoAdminFilter',
 )
