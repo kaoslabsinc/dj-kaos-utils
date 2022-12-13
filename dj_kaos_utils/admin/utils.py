@@ -69,14 +69,16 @@ def render_img(src: str, alt="", attrs=None):
     return render_element('img', attrs={'src': src, 'alt': alt} | attrs)
 
 
-def render_anchor(href: str, children=None, new_tab=True, attrs=None):
+def render_anchor(href: str, children=None, attrs=None, new_tab=True, new_tab_icon=True):
     """
     Render anchor/link tag with href, children, etc.
 
     :param href: the href link of the anchor
     :param children: what to render inside the anchor tag
-    :param new_tab: whether the link should open a new tab
     :param attrs: other attributes to put on the element
+    :param new_tab: whether the link should open a new tab
+    :param new_tab_icon: whether to render a mini icon at the end of the link denoting it will open in a new tab.
+        Only goes into effect if new_tab is True.
     :return: anchor tag
     """
     attrs = attrs or {}
@@ -86,6 +88,9 @@ def render_anchor(href: str, children=None, new_tab=True, attrs=None):
     if new_tab:
         _attrs['target'] = '_blank'
         _attrs['rel'] = 'noreferrer'
+        if new_tab_icon:
+            children = render_element('span', children, {'style': "margin-right: 0.5rem"})
+            children += render_element('sup', '⇱', {'style': "transform: scaleX(-1); display: inline-block;"})
     return render_element('a', children, attrs=_attrs | attrs)
 
 
