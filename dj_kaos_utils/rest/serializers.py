@@ -1,160 +1,143 @@
-from typing import Type
+from typing import Type, Mapping
 
+from django.db import models
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer
 from rest_framework.settings import api_settings
-
-from .utils import get_lookup_values
 
 NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
 
 
-class RelatedModelSerializer(serializers.ModelSerializer):
-    lookup_field = None
-    can_get = True
-    can_create = False
-    can_update = False
+class WritableNestedSerializer(serializers.ModelSerializer):
+    """
+    WritableNestedSerializer functions as a ModelSerializer when serializing (retrieve and list) returning
+    nested models. When deserializing, acts as a SlugRelatedField if data is a string
+    (example UUID value) otherwise behaves as a writable nested serializer.
+    """
+
+    # Disable errors on nested writes. We know what we're doing!
+    serializers.raise_errors_on_nested_writes = lambda x, y, z: None
 
     def __init__(self, *args, **kwargs):
-        self.lookup_field = kwargs.pop('lookup_field', self.lookup_field) or getattr(self.Meta, 'lookup_field', None)
-        self.can_get = kwargs.pop('can_get', self.can_get)
-        self.can_create = kwargs.pop('can_create', self.can_create)
-        self.can_update = kwargs.pop('can_update', self.can_update)
-        assert self.can_get or self.can_create or self.can_update, \
-            "At least one of can_get, can_create or can_update should be set."
+        self.lookup_field = kwargs.pop('lookup_field', self.Meta.lookup_field)
+        self.can_get = kwargs.pop('can_get', True)
+        self.can_create = kwargs.pop('can_create', False)
+        self.can_update = kwargs.pop('can_update', False)
         super().__init__(*args, **kwargs)
 
-    @staticmethod
-    def _get_object(model, lookup_field, lookup_value):
+    def to_internal_value(self, data):
+        if isinstance(data, Mapping):
+            # data is a dict handle as ModelSerializer
+            return super().to_internal_value(data)
+        else:
+            # data is a lookup_value handle as SlugRelatedField
+            if self.can_get:
+                return self.get_object(data)
+            else:
+                self._raise_action_validation_error('get')
+
+    def pop_nested_fields(self, validated_data):
+        """
+        Returns a dictionary of nested fields and their data from the validated_data dictionary.
+        The data for each nested field is removed from the validated_data dictionary.
+        """
+        nested_fields = {}
+        for field_name, field in self.fields.items():
+            if isinstance(field, WritableNestedSerializer):
+                if validated_data.get(field_name) is not None:
+                    nested_fields[field_name] = validated_data.pop(field_name)
+        return nested_fields
+
+    def pop_list_fields(self, validated_data):
+        """
+        Returns a dictionary of ;ost fields and their data from the validated_data dictionary.
+        The data for each nested field is removed from the validated_data dictionary.
+        """
+        nested_fields = {}
+        for field_name, field in self.fields.items():
+            if isinstance(field, ListSerializer) and isinstance(field.child, WritableNestedSerializer):
+                if validated_data.get(field_name) is not None:
+                    nested_fields[field_name] = validated_data.pop(field_name)
+        return nested_fields
+
+    def get_object(self, lookup_value):
+        model = self.Meta.model
         try:
-            return model.objects.get(**{lookup_field: lookup_value})
+            return model.objects.get(**{self.lookup_field: lookup_value})
         except model.DoesNotExist:
             raise serializers.ValidationError({
-                lookup_field: f"{model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
+                self.lookup_field:
+                    f"{model._meta.object_name} matching query {self.lookup_field}={lookup_value} does not exist."
             })
 
-    def to_internal_value(self, data):
-        lookup_field = self.lookup_field
-        assert lookup_field is not None, "You should specify lookup_field"
+    def _raise_action_validation_error(self, action):
+        raise serializers.ValidationError({
+            NON_FIELD_ERRORS_KEY: f"{self.__class__.__name__} is not configured to {action}"
+        })
 
-        lookup_value = data.pop(lookup_field, None)
-        model = self.Meta.model
+    def save_nested_data(self, nested_data, related_manager=None):
+        if isinstance(nested_data, models.Model):
+            return nested_data
 
-        if lookup_value is not None:
-            if data:  # { uuid: "xxxxxxxx-xxxx-...", name : "Name" }, update
-                if self.can_update:
-                    instance = self._get_object(model, lookup_field, lookup_value)
-                    return self.update(instance, data)
-                else:
-                    raise serializers.ValidationError({
-                        NON_FIELD_ERRORS_KEY: "This api is not configured to update existing objects"
-                    })
-            else:  # e.g. { uuid: "xxxxxxxx-xxxx-..." }, get
-                if self.can_get:
-                    return self._get_object(model, lookup_field, lookup_value)
-                else:
-                    raise serializers.ValidationError({
-                        NON_FIELD_ERRORS_KEY: "This api is not configured to get existing objects"
-                    })
-        else:  # e.g. { name : "Name" } or {} aka just a prompt to create the default object of this type
-            if self.can_create:
-                return self.create(data)
+        if self.lookup_field in nested_data:
+            if self.can_update:
+                nested_lookup_value = nested_data[self.lookup_field]
+                nested_instance = self.get_object(nested_lookup_value)
+                return self.update(nested_instance, nested_data)
             else:
-                raise serializers.ValidationError({
-                    NON_FIELD_ERRORS_KEY: "This api is not configured to create new objects"
-                })
+                self._raise_action_validation_error('update')
+        else:
+            if self.can_create:
+                if not related_manager:
+                    return self.create(nested_data)
+                else:
+                    nested_list_fields = self.pop_list_fields(nested_data)
+                    self.process_nested_fields(nested_data)
+                    nested_instance = related_manager.create(**nested_data)
+                    self.process_list_fields(nested_instance, nested_list_fields)
+                    return nested_instance
+            else:
+                self._raise_action_validation_error('create')
+
+    def process_nested_fields(self, validated_data):
+        nested_fields = self.pop_nested_fields(validated_data)
+        for field_name, nested_data in nested_fields.items():
+            nested_serializer: WritableNestedSerializer = self.fields[field_name]
+            validated_data[field_name] = nested_serializer.save_nested_data(nested_data)
+
+    def process_list_fields(self, instance, list_fields):
+        for field_name, list_data in list_fields.items():
+            list_serializer: ListSerializer = self.fields[field_name]
+            nested_serializer: WritableNestedSerializer = self.fields[field_name].child
+            related_manager = getattr(instance, list_serializer.source)
+            for nested_data in list_data:
+                related_manager.add(nested_serializer.save_nested_data(nested_data, related_manager))
+
+    def create(self, validated_data):
+        list_fields = self.pop_list_fields(validated_data)
+        self.process_nested_fields(validated_data)
+        instance = super().create(validated_data)
+        self.process_list_fields(instance, list_fields)
+        return instance
+
+    def update(self, instance, validated_data):
+        list_fields = self.pop_list_fields(validated_data)
+        self.process_nested_fields(validated_data)
+        instance = super().update(instance, validated_data)
+        self.process_list_fields(instance, list_fields)
+        return instance
 
 
-def make_nested_writable(
-    serializer_cls: Type[serializers.ModelSerializer],
-    lookup_field=RelatedModelSerializer.lookup_field,
-    get=RelatedModelSerializer.can_get,
-    create=RelatedModelSerializer.can_create,
-    update=RelatedModelSerializer.can_update
-):
-    class WritableNestedXXX(RelatedModelSerializer, serializer_cls):
+def make_nested_writable(serializer_cls: Type[serializers.ModelSerializer]):
+    class WritableNestedXXX(WritableNestedSerializer, serializer_cls):
         pass
 
-    WritableNestedXXX.lookup_field = lookup_field
-    WritableNestedXXX.can_get = get
-    WritableNestedXXX.can_create = create
-    WritableNestedXXX.can_update = update
     WritableNestedXXX.__name__ = WritableNestedXXX.__name__.replace('XXX', serializer_cls.__name__)
 
     return WritableNestedXXX
 
 
-class HasRelatedFieldsModelSerializer(serializers.ModelSerializer):
-    default_related_lookup_field = 'uuid'
-
-    def __init__(self, *args, **kwargs):
-        self.related_fields = self._get_related_fields()
-        super().__init__(*args, **kwargs)
-
-    def _get_related_fields(self):
-        related_fields = {}
-        for item in self.Meta.related_fields:
-            if isinstance(item, tuple):
-                field, lookup = item
-            else:
-                field, lookup = item, self.default_related_lookup_field
-            related_fields[field] = lookup
-        return related_fields
-
-    @staticmethod
-    def _get_object(qs, lookup_field, lookup_value):
-        try:
-            return qs.get(**{lookup_field: lookup_value})
-        except qs.model.DoesNotExist:
-            raise serializers.ValidationError({
-                lookup_field: f"{qs.model._meta.object_name} matching query {lookup_field}={lookup_value} does not exist."
-            })
-
-    def create(self, validated_data):
-        rel_data_dict = {}
-        for field in self.related_fields:
-            rel_data_dict[field] = validated_data.pop(field)
-
-        instance = super().create(validated_data)
-
-        for field, data_list in rel_data_dict.items():
-            for data in data_list:
-                getattr(instance, field).create(**data)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        rel_data_dict = {}
-        for field in self.Meta.related_fields:
-            rel_data_dict[field] = validated_data.pop(field)
-
-        instance = super().update(instance, validated_data)
-
-        for field, data_list in rel_data_dict.items():
-            rel_manager = getattr(instance, field)
-            lookup = self.related_fields[field]
-            rel_manager.exclude(
-                **{f'{lookup}__in': get_lookup_values(data_list, lookup)}
-            ).delete()
-
-            for data in data_list:
-                lookup_value = data.pop(lookup, None)
-                if lookup_value is not None:
-                    rel_instance = self._get_object(rel_manager, lookup, lookup_value)
-                    if data:
-                        for k, v in data.items():
-                            setattr(rel_instance, k, v)
-                            rel_instance.save()
-                    else:
-                        pass  # just reasserting the existing of this relationship (won't get deleted up there) TODO
-                        # What if we want to add an existing object to the relationship? can we do that?
-                else:
-                    rel_manager.create(**data)
-
-        return instance
-
-
 __all__ = (
-    'RelatedModelSerializer',
+    'WritableNestedSerializer',
     'make_nested_writable',
-    'HasRelatedFieldsModelSerializer',
 )
