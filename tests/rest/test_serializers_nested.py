@@ -106,3 +106,47 @@ def test_get(product_serializer, product_data, product):
         with pytest.raises(ValidationError):
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
+
+@pytest.mark.django_db
+def test_create2(product_serializer, product_data, product):
+    product_data['category'] = {'name': 'Create Category'}
+    serializer = product_serializer(data=product_data)
+    if serializer.fields['category'].can_create:
+        assert serializer.is_valid(), serializer.errors
+        product = serializer.save()
+        assert product.category.name == 'Create Category'
+    else:
+        with pytest.raises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+
+@pytest.mark.django_db
+def test_update2(product_serializer, product_data, product):
+    product_data['category'] = {'id': 1, 'name': 'Update Category'}
+    serializer = product_serializer(product, data=product_data)
+    if serializer.fields['category'].can_update:
+        assert serializer.is_valid(), serializer.errors
+        product = serializer.save()
+        assert product.category.name == 'Update Category'
+        assert product.category.id == 1
+    else:
+        with pytest.raises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+
+@pytest.mark.django_db
+def test_get2(product_serializer, product_data, product):
+    category2 = Category.objects.create(id=2, name='Category 2')
+    product_data['category'] = category2.id
+    serializer = product_serializer(product, data=product_data)
+    if serializer.fields['category'].can_get:
+        assert serializer.is_valid(), serializer.errors
+        product = serializer.save()
+        assert product.category.name == 'Category 2'
+    else:
+        with pytest.raises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
