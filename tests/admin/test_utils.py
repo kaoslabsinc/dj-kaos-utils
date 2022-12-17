@@ -38,4 +38,7 @@ def test_render_anchor():
 
 def test_render_anchor_new_tab():
     el = render_anchor("https://google.com")
-    assert el == '<a href="https://google.com" target="_blank" rel="noreferrer">https://google.com</a>'
+    assert el == '<a href="https://google.com" target="_blank" rel="noreferrer">' \
+                 '<span style="margin-right: 0.5rem">https://google.com</span>' \
+                 '<sup style="transform: scaleX(-1); display: inline-block;">⇱</sup>' \
+                 '</a>'
