@@ -1,5 +1,6 @@
 import json
 
+from django.urls import reverse, NoReverseMatch
 from django.utils.html import format_html_join, format_html
 from django.utils.safestring import mark_safe
 from pygments import highlight
@@ -68,14 +69,16 @@ def render_img(src: str, alt="", attrs=None):
     return render_element('img', attrs={'src': src, 'alt': alt} | attrs)
 
 
-def render_anchor(href: str, children=None, new_tab=True, attrs=None):
+def render_anchor(href: str, children=None, attrs=None, new_tab=True, new_tab_icon=True):
     """
     Render anchor/link tag with href, children, etc.
 
     :param href: the href link of the anchor
     :param children: what to render inside the anchor tag
-    :param new_tab: whether the link should open a new tab
     :param attrs: other attributes to put on the element
+    :param new_tab: whether the link should open a new tab
+    :param new_tab_icon: whether to render a mini icon at the end of the link denoting it will open in a new tab.
+        Only goes into effect if new_tab is True.
     :return: anchor tag
     """
     attrs = attrs or {}
@@ -85,4 +88,33 @@ def render_anchor(href: str, children=None, new_tab=True, attrs=None):
     if new_tab:
         _attrs['target'] = '_blank'
         _attrs['rel'] = 'noreferrer'
+        if new_tab_icon:
+            children = render_element('span', children, {'style': "margin-right: 0.5rem"})
+            children += render_element('sup', '⇱', {'style': "transform: scaleX(-1); display: inline-block;"})
     return render_element('a', children, attrs=_attrs | attrs)
+
+
+def get_admin_link(obj):
+    opts = obj._meta
+    try:
+        return reverse(f'admin:{opts.app_label}_{opts.model_name}_change', args=(obj.id,))
+    except NoReverseMatch:
+        return None
+
+
+def render_admin_link(obj, **kwargs):
+    admin_link = get_admin_link(obj)
+    if admin_link:
+        return render_anchor(admin_link, str(obj), **kwargs)
+    else:
+        return str(obj)
+
+
+__all__ = (
+    'pp_json',
+    'render_element',
+    'render_img',
+    'render_anchor',
+    'get_admin_link',
+    'render_admin_link',
+)
