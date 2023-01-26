@@ -6,8 +6,11 @@ from .mixins import HasWarnings
 
 
 class HasWarningsAdmin(BaseModelAdmin):
-    readonly_fields = ('warnings_display',)
+    """
+    A Django ModelAdmin class to display warnings associated with an object of `HasWarnings` class.
+    """
 
+    readonly_fields = ('warnings_display',)
     fieldsets = (
         ("Warnings", {'fields': ('warnings_display',)}),
     )
@@ -18,7 +21,6 @@ class HasWarningsAdmin(BaseModelAdmin):
             warning if isinstance(warning, str) else format_html("<code>{}</code>: {}", *warning)
             for warning in obj.get_warnings()
         )
-
         return obj and format_html(
             "<ol>{}</ol>",
             format_html_join('\n', '<li>{}</li>', zip(processed_warnings))

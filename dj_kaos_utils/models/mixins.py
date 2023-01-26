@@ -40,13 +40,24 @@ class HasInitials:
 
 
 class HasWarnings:
-    """Adds a property `warnings` useful to catch issues that aren't worthy of throwing a `ValidationError`"""
+    """
+    Adds a method `get_warnings` useful to catch issues that aren't worthy of throwing a `ValidationError`
+
+    Example:
+        >>> class MyModel(models.Model):
+        >>>     def get_warnings(self):
+        >>>         warnings = super().get_warnings()
+        >>>         if self.fulfills_condition():
+        >>>             return [*warnings, "New warning"]
+        >>>         return warnings
+    """
 
     def get_warnings(self) -> list[str | tuple[str, str]]:
         """
         Override this method and append any warnings to the result of calling `super()`
+
         :return: A list of warnings. Each item in the list is either a tuple of (field_name, warning description) or
-        just warning description.
+            just warning description.
         """
         return []
 

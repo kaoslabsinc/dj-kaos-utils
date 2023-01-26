@@ -37,5 +37,12 @@ Mixins
    :show-inheritance:
 
 .. autoclass:: dj_kaos_utils.models.HasWarnings
-   :members: warnings
+   :members: get_warnings
+   :show-inheritance:
+
+
+Admin
+-----
+
+.. autoclass:: dj_kaos_utils.models.admin.HasWarningsAdmin
    :show-inheritance:
