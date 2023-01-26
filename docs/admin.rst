@@ -36,3 +36,5 @@ Utils
 .. autofunction:: dj_kaos_utils.admin.utils.render_element
 .. autofunction:: dj_kaos_utils.admin.utils.render_img
 .. autofunction:: dj_kaos_utils.admin.utils.render_anchor
+.. autofunction:: dj_kaos_utils.admin.utils.get_admin_link
+.. autofunction:: dj_kaos_utils.admin.utils.render_admin_link
