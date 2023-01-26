@@ -1,5 +1,6 @@
 wheel
 sphinx~=5.2
 sphinx-rtd-theme
+autoclasstoc
 
 -e .[test]
