@@ -1,6 +1,10 @@
 Forms
 =====
 
+.. contents::
+    :depth: 2
+    :local:
+
 Forms
 -----
 .. autoclass:: dj_kaos_utils.forms.UnrequiredFieldsFormMixin

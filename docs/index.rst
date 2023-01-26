@@ -12,7 +12,7 @@ Install::
     pip install dj-kaos-utils
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Modules:
 
    querysets
