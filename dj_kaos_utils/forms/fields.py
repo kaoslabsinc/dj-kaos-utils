@@ -7,8 +7,8 @@ class ListTextWidget(forms.TextInput):
     A Django form widget that renders a text input with a datalist populated with options from a given list.
 
     Example:
-    >>> class MyForm(forms.Form):
-    >>>     my_field = forms.CharField(widget=ListTextWidget(datalist=['option1', 'option2', 'option3']))
+        >>> class MyForm(forms.Form):
+        >>>     my_field = forms.CharField(widget=ListTextWidget(datalist=['option1', 'option2', 'option3']))
     """
 
     def __init__(self, datalist, name, *args, **kwargs):
