@@ -19,6 +19,14 @@ class HasWarningsAdmin(BaseModelAdmin):
 
     @admin.display(description="warnings")
     def warnings_display(self, obj: HasWarnings):
+        """
+        Return the processed warnings of the object as an ordered list in HTML format.
+
+        :param obj: an object of `HasWarnings` class
+        :type obj: HasWarnings
+        :return: warnings as an ordered list in HTML format
+        :rtype: str
+        """
         processed_warnings = (
             warning if isinstance(warning, str) else format_html("<code>{}</code>: {}", *warning)
             for warning in obj.get_warnings()
