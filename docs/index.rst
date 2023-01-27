@@ -22,6 +22,7 @@ Install::
    management
    forms
    models
+   rest
 
 Indices and tables
 ==================
