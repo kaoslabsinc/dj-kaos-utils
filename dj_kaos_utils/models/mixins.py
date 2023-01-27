@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from py_kaos_utils.string import create_initials
 
 

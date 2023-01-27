@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib import admin
 from django.contrib.admin.options import BaseModelAdmin
 from django.utils.html import format_html, format_html_join
