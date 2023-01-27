@@ -3,7 +3,15 @@ from django.contrib import admin
 
 class BooleanAdminFilter(admin.SimpleListFilter):
     """
-    An admin filter that works like an on-off switch.
+    An admin filter that works like an on-off switch; two options: on, off (all)
+
+    Example:
+        >>> class ByAvailableFilter(BooleanAdminFilter):
+        >>>     title = "availability"
+        >>>     parameter_name = 'is_available'
+        >>>
+        >>>     def filter(self, request, queryset):
+        >>>         return queryset.filter(is_available=True)
     """
 
     def lookups(self, request, model_admin):
@@ -49,7 +57,18 @@ class QuerysetChoiceFilter(admin.SimpleListFilter):
 
 class YesNoAdminFilter(admin.SimpleListFilter):
     """
-    An admin filter that works like an on-off switch.
+    Admin filter with three options: yes, no and all.
+
+    Example:
+        >>> class IsArchivedFilter(BooleanAdminFilter):
+        >>>     title = "archived"
+        >>>     parameter_name = 'is_archived'
+        >>>
+        >>>     def filter_yes(self, request, queryset):
+        >>>         return queryset.filter(is_archived=True)
+        >>>
+        >>>     def filter_no(self, request, queryset):
+        >>>         return queryset.filter(is_archived=False)
     """
 
     def lookups(self, request, model_admin):

@@ -14,6 +14,7 @@ author = 'Kaos Labs Inc.'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    'autoclasstoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
 ]

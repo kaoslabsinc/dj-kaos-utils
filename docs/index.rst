@@ -12,16 +12,17 @@ Install::
     pip install dj-kaos-utils
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Modules:
+    :maxdepth: 3
+    :caption: Modules:
 
-   querysets
-   admin
-   datetime
-   argparse
-   management
-   forms
-   models
+    querysets
+    admin
+    datetime
+    argparse
+    management
+    forms
+    models
+    rest
 
 Indices and tables
 ==================

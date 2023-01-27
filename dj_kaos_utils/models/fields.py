@@ -19,13 +19,17 @@ class TwoPlacesDecimalField(models.DecimalField):
 
 
 class MoneyField(TwoPlacesDecimalField):
-    """An amount of money"""
+    """Model field representing an amount of money"""
     description = "An amount of money"
 
 
 class CaseInsensitiveFieldMixin(RegisterLookupMixin):
     """
     Field mixin that uses case-insensitive lookup alternatives if they exist.
+
+    Example:
+        >>> class LowerCaseLookupCharField(CaseInsensitiveFieldMixin, models.CharField):
+        >>>     pass
     """
     LOOKUP_CONVERSIONS = {
         'exact': 'iexact',

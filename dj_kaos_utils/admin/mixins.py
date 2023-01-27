@@ -7,6 +7,10 @@ class EditReadonlyAdminMixin(BaseModelAdmin):
     """
     Fields defined in :attr:`edit_readonly_fields` are editable upon creation, but after that they become readonly
     Set :attr:`allow_superusers` to True to allow superusers to edit such fields even in an edit form.
+
+    Example:
+        >>> class MyModelAdmin(EditReadonlyAdminMixin, admin.ModelAdmin):
+        >>>     edit_readonly_fields = ('slug',)
     """
     allow_superusers = False
     edit_readonly_fields = ()
@@ -28,6 +32,11 @@ class PrepopulateSlugAdminMixin(BaseModelAdmin):
     Makes the inheriting admin prepopulate the slug field from the field denoted by `slug_source`.
     Assumes by default, the slug field is ``model.slug``. If the field name is different, you can set it with
     `slug_field`.
+
+    Example:
+        >>> class MyModelAdmin(PrepopulateSlugAdminMixin, admin.ModelAdmin):
+        >>>     slug_field = 'slug'
+        >>>     slug_source = 'name'
     """
     slug_field = 'slug'
     slug_source = None
@@ -61,6 +70,10 @@ class DjangoObjectActionsPermissionsMixin(BaseDjangoObjectActions):
 class AreYouSureActionsAdminMixin(BaseDjangoObjectActions):
     """
     Add a confirmation prompt to the certain object actions defined in `are_you_sure_actions`.
+
+    Example:
+        >>> class MyModelAdmin(AreYouSureActionsAdminMixin, admin.ModelAdmin):
+        >>>     are_you_sure_actions = ('archive',)
     """
     are_you_sure_actions = ()
     are_you_sure_prompt_f = "Are you sure you want to {label} this object?"
@@ -79,6 +92,10 @@ class ExcludeFromNonSuperusersMixin(BaseModelAdmin):
     """
     Admin mixin to make some fields hidden to non-superusers. Define such fields using `.exclude_from_non_superusers`,
     or dynamically by overriding `.get_exclude_from_non_superusers()`.
+
+    Example:
+        >>> class MyModelAdmin(ExcludeFromNonSuperusersMixin, admin.ModelAdmin):
+        >>>     exclude_from_non_superusers = ('is_superuser',)
     """
     exclude_from_non_superusers = ()
 
@@ -100,6 +117,10 @@ class ExcludeFromFieldsetsMixin(BaseModelAdmin):
     Admin mixin to make sure fields that are in `exclude` are removed from the `fieldsets` definition.
     By default, without this mixin, if a field defined in `fieldsets` is in `exclude`, Django throws an
     error complaining about a missing value for the field.
+
+    Example:
+        >>> class MyModelAdmin(ExcludeFromFieldsetsMixin, admin.ModelAdmin):
+        >>>     pass
     """
 
     def get_fieldsets(self, request, obj=None):

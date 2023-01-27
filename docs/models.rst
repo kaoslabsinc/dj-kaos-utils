@@ -1,11 +1,15 @@
 Models
-======
+******
+
+.. contents::
+    :depth: 2
+    :local:
 
 Fields
-------
+======
 
 .. autoclass:: dj_kaos_utils.models.TwoPlacesDecimalField
-   :show-inheritance:
+    :show-inheritance:
 
 .. autoclass:: dj_kaos_utils.models.MoneyField
    :show-inheritance:
@@ -20,13 +24,13 @@ Fields
    :show-inheritance:
 
 QuerySets
----------
+=========
 
 Refer to :doc:`querysets`
 
 
 Mixins
-------
+=======
 
 .. autoclass:: dj_kaos_utils.models.HasAutoFields
    :members: set_auto_fields
@@ -37,5 +41,12 @@ Mixins
    :show-inheritance:
 
 .. autoclass:: dj_kaos_utils.models.HasWarnings
-   :members: warnings
+   :members: get_warnings
+   :show-inheritance:
+
+
+Admin
+=====
+
+.. autoclass:: dj_kaos_utils.models.admin.HasWarningsAdmin
    :show-inheritance:

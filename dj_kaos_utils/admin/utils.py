@@ -14,6 +14,13 @@ def pp_json(obj):
 
     :param obj: The dictionary/json to be pretty printed
     :return: syntax highlighted python dictionary/json in html
+
+    Example:
+        >>> class MyModelAdmin(admin.ModelAdmin):
+        >>>     ...
+        >>>     @admin.display
+        >>>     def json_display(self, obj):
+        >>>         return pp_json(obj.json)
     """
     response = json.dumps(obj, sort_keys=True, indent=2)
     formatter = HtmlFormatter(style='colorful')
@@ -42,6 +49,13 @@ def render_element(tag, children=None, attrs=None):
     :param children: the children of the html element, will be escaped unless marked safe
     :param attrs: dictionary of attributes to render on the element
     :return: safe html element with tag, attributes and children
+
+    Example:
+        >>> class MyModelAdmin(admin.ModelAdmin):
+        >>>     ...
+        >>>     @admin.display
+        >>>     def alert_display(self, obj):
+        >>>         return render_element('div', "Alert", {'class': 'alert'})
     """
     attrs = attrs or {}
     if children is None:
@@ -64,6 +78,13 @@ def render_img(src: str, alt="", attrs=None):
     :param alt: alt attribute
     :param attrs: dict of extra attributes
     :return: safe html of img tag
+
+    Example:
+        >>> class MyModelAdmin(admin.ModelAdmin):
+        >>>     ...
+        >>>     @admin.display
+        >>>     def image_display(self, obj):
+        >>>         return render_img('image.jpg', "Image", {'class': 'thumbnail'})
     """
     attrs = attrs or {}
     return render_element('img', attrs={'src': src, 'alt': alt} | attrs)
@@ -80,6 +101,13 @@ def render_anchor(href: str, children=None, attrs=None, new_tab=True, new_tab_ic
     :param new_tab_icon: whether to render a mini icon at the end of the link denoting it will open in a new tab.
         Only goes into effect if new_tab is True.
     :return: anchor tag
+
+    Example:
+        >>> class MyModelAdmin(admin.ModelAdmin):
+        >>>     ...
+        >>>     @admin.display
+        >>>     def url_display(self, obj):
+        >>>         return render_anchor('https://www.example.com', "Link")
     """
     attrs = attrs or {}
     _attrs = {'href': href}
@@ -95,6 +123,20 @@ def render_anchor(href: str, children=None, attrs=None, new_tab=True, new_tab_ic
 
 
 def get_admin_link(obj):
+    """
+    Return the admin change page link for the given object, or None if the link cannot be generated.
+
+    :param obj: the object for which to get the admin change page link
+    :type obj: django model instance
+    :return: the admin change page link if it exists or None otherwise
+    :rtype: str or None
+    :raises: `NoReverseMatch` if the admin change URL does not exist for the given object
+
+    Example:
+        >>> class MyModel(models.Model):
+        >>>     def get_absolute_url(self):
+        >>>         return get_admin_link(self)
+    """
     opts = obj._meta
     try:
         return reverse(f'admin:{opts.app_label}_{opts.model_name}_change', args=(obj.id,))
@@ -103,6 +145,19 @@ def get_admin_link(obj):
 
 
 def render_admin_link(obj, **kwargs):
+    """
+    Return marked-as-safe html containing an anchor tag linking to the admin change page of the object. If the object
+    doesn't have an admin change page, return the string representation of the object
+
+    :param obj: the model instance to grab the link for
+    :param kwargs: extra kwargs to pass to `render_anchor`
+    :return: marked-as-safe html of the anchor tag
+
+    Example:
+        >>> class MyModelAdmin(admin.ModelAdmin):
+        >>>     def parent_display(self, obj):
+        >>>         return render_admin_link(obj.parent)
+    """
     admin_link = get_admin_link(obj)
     if admin_link:
         return render_anchor(admin_link, str(obj), **kwargs)

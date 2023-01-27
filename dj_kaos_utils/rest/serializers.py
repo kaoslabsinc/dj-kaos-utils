@@ -5,13 +5,11 @@ from rest_framework import serializers
 from rest_framework.serializers import ListSerializer
 from rest_framework.settings import api_settings
 
-NON_FIELD_ERRORS_KEY = api_settings.NON_FIELD_ERRORS_KEY
-
 
 class WritableNestedSerializer(serializers.ModelSerializer):
     """
-    WritableNestedSerializer functions as a ModelSerializer when serializing (retrieve and list) returning
-    nested models. When deserializing, acts as a SlugRelatedField if data is a string
+    `WritableNestedSerializer` functions as a `ModelSerializer` when serializing (retrieve and list) returning
+    nested models. When deserializing, acts as a `SlugRelatedField` if data is a string
     (example UUID value) otherwise behaves as a writable nested serializer.
     """
 
@@ -38,7 +36,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
     def pop_nested_fields(self, validated_data):
         """
-        Returns a dictionary of nested fields and their data from the validated_data dictionary.
+        Return a dictionary of nested fields and their data from the validated_data dictionary.
         The data for each nested field is removed from the validated_data dictionary.
         """
         nested_fields = {}
@@ -50,7 +48,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
     def pop_list_fields(self, validated_data):
         """
-        Returns a dictionary of ;ost fields and their data from the validated_data dictionary.
+        Return a dictionary of list fields and their data from the validated_data dictionary.
         The data for each nested field is removed from the validated_data dictionary.
         """
         nested_fields = {}
@@ -72,7 +70,7 @@ class WritableNestedSerializer(serializers.ModelSerializer):
 
     def _raise_action_validation_error(self, action):
         raise serializers.ValidationError({
-            NON_FIELD_ERRORS_KEY: f"{self.__class__.__name__} is not configured to {action}"
+            api_settings.NON_FIELD_ERRORS_KEY: f"{self.__class__.__name__} is not configured to {action}"
         })
 
     def save_nested_data(self, nested_data, related_manager=None):
