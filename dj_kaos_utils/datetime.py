@@ -1,27 +1,17 @@
 from __future__ import annotations
 
-import datetime
-
-from dateutil import parser
-from django.utils.timezone import is_aware, make_aware
+from django.conf import settings
+from py_kaos_utils.datetime import DatetimeWrapper as PyDTWrapper
 
 
-def parse_and_make_tz_aware(s: str | None) -> datetime.datetime | None:
-    """
-    Parse the string s into a datetime object and make it timezone aware if it is not so already.
-
-    :param s: String to be parsed into a timezone
-    :return: Timezone aware datetime instance
-    """
-    if s is None:
-        return
-
-    dt = parser.parse(s)
-    if not is_aware(dt):
-        dt = make_aware(dt)
-    return dt
+class DatetimeWrapper(PyDTWrapper):
+    def __init__(self, raw_datetime, timezone_str=settings.TIME_ZONE):
+        super().__init__(raw_datetime, timezone_str)
 
 
-__all__ = [
-    'parse_and_make_tz_aware',
-]
+DT = DatetimeWrapper
+
+__all__ = (
+    'DatetimeWrapper',
+    'DT',
+)
